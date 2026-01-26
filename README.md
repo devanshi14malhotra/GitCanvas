@@ -1,4 +1,5 @@
 # GitCanvas 🎨
+[![Streamlit Live App](https://img.shields.io/badge/Streamlit-Live%20App-5314C4?logo=streamlit)](https://gitcanvas-dm.streamlit.app/)
 
 GitCanvas is a Streamlit application that turns your GitHub contribution history into art. 
 No more green squares, or any monotonous themes... visualize your code journey the way you want to.
@@ -12,6 +13,11 @@ No more green squares, or any monotonous themes... visualize your code journey t
   - **Marvel**: A comic-book style hero profile based on your commit power (and moreeee... coming soon....)
 - **AI Integration**: Placeholder logic ready for GenAI integration to analyze your "coding vibe".
 - **Instant Export**: Download your art as SVG.
+
+## Deployed application:
+```
+https://gitcanvas-dm.streamlit.app/
+```
 
 ## 🛠 Installation
 
