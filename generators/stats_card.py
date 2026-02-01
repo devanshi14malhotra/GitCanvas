@@ -42,7 +42,7 @@ def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors
     
     stats_map = [
         ("stars", "Total Stars", f"{data.get('total_stars', 0)}"),
-        ("commits", "Total Commits (Year)", f"{data.get('total_commits', 'N/A')}"),
+        ("commits", "Total Commits", f"{data.get('total_commits', 'N/A')}"),
         ("repos", "Public Repos", f"{data.get('public_repos', 0)}"),
         ("followers", "Followers", f"{data.get('followers', 0)}")
     ]
