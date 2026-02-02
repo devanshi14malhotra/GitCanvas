@@ -1,2 +1,53 @@
+# Python (Compiled files)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.flakes/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
+# Virtual Environments
+venv/
+env/
+.venv/
+ENV/
+bin/
+include/
+lib/
+share/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# Operating System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment Variables & Secrets
 .env
+.flaskenv
+.streamlit/secrets.toml
+
+# Logs
+*.log
