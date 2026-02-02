@@ -3,3 +3,4 @@ svgwrite
 requests
 fastapi
 uvicorn
+python-dotenv
