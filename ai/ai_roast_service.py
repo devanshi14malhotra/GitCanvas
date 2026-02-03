@@ -7,7 +7,12 @@ import os
 import random
 import requests
 from typing import Dict, Optional
-import google.generativeai as genai
+try:
+    import google.generativeai as genai  # type: ignore
+    _HAS_GENAI = True
+except Exception:
+    genai = None
+    _HAS_GENAI = False
 from openai import OpenAI
 
 # Get API keys from environment
@@ -16,7 +21,13 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # Initialize APIs
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+    if _HAS_GENAI:
+        try:
+            genai.configure(api_key=GEMINI_API_KEY)
+        except Exception as e:
+            print(f"Failed to configure Google Generative AI client: {e}")
+    else:
+        print("Google Generative AI client not installed; Gemini support disabled.")
 
 if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
@@ -88,6 +99,8 @@ def generate_roast_with_gemini(profile_data: Dict) -> str:
     """Generate roast using Google Gemini"""
     if not GEMINI_API_KEY:
         raise ValueError("Gemini API key not configured")
+    if not _HAS_GENAI:
+        raise ImportError("google.generativeai is not installed")
     
     prompt = create_roast_prompt(profile_data)
     

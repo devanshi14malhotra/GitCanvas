@@ -15,8 +15,9 @@ def render(data):
     
     width = cols * 15 + 20
     height = rows * 15 + 20
-    
-    dwg = svgwrite.Drawing(size=(f"{width}px", f"{height}px"))
+
+    # Make responsive: use a viewBox and percentage sizing so SVG scales on small screens
+    dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
     
     # Background (Water / Dark Blue for map vibe)
     dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), fill="#202040")) 

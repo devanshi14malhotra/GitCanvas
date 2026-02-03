@@ -19,7 +19,7 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None):
     header_height = 40
     height = header_height + (len(langs) * item_height) + 10
     
-    dwg = svgwrite.Drawing(size=(f"{width}px", f"{height}px"))
+    dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
     
     # Background
     dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), rx=10, ry=10, 

@@ -10,7 +10,8 @@ def render(data):
     
     width = 800
     height = 500
-    dwg = svgwrite.Drawing(size=(f"{width}px", f"{height}px"))
+    # Make responsive: use a viewBox and percentage sizing so SVG scales on small screens
+    dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
     
     # Background: Iron Man Red
     dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), fill="#7A0000"))

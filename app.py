@@ -1,11 +1,11 @@
-import streamlit as st
+import streamlit as st  # type: ignore
 import base64
 import os
-from dotenv import load_dotenv
-from roast_widget_streamlit import render_roast_widget
-from generators import stats_card, lang_card, contrib_card, badge_generator
-from utils import github_api
-from themes.styles import THEMES
+from dotenv import load_dotenv  # type: ignore
+from roast_widget_streamlit import render_roast_widget  # type: ignore
+from generators import stats_card, lang_card, contrib_card, badge_generator  # type: ignore
+from utils import github_api  # type: ignore
+from themes.styles import THEMES  # type: ignore
 
 # Load environment variables
 load_dotenv()
@@ -54,6 +54,8 @@ with st.sidebar:
     selected_theme = st.selectbox("Select Theme", list(THEMES.keys()))
     
     # Customization Expander
+    # Ensure custom_colors exists even if the expander isn't opened
+    custom_colors = {}
     with st.expander("Customize Colors", expanded=False):
         st.caption("Override theme defaults")
         default_theme = THEMES.get(selected_theme, THEMES["Default"]).copy() # Copy to avoid mutating global

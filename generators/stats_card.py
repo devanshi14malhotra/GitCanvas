@@ -23,7 +23,7 @@ def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors
     visible_items = sum(1 for k, v in show_options.items() if v)
     height = base_height + (visible_items * item_height) + 10
     
-    dwg = svgwrite.Drawing(size=(f"{width}px", f"{height}px"))
+    dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
     
     # Background
     dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), rx=10, ry=10, 
