@@ -1,0 +1,11 @@
+{
+    "bg_color": "#0d0d0d",
+    "border_color": "#00ff00",
+    "title_color": "#00ff00",
+    "text_color": "#00ff00",
+    "icon_color": "#00aa00",
+    "font_family": "'Courier New', Courier, monospace",
+    "title_font_size": 18,
+    "text_font_size": 14,
+    "is_pixel": true
+}

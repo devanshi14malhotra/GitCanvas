@@ -1,0 +1,10 @@
+{
+    "bg_color": "#1a1a1a",
+    "border_color": "#e23636",
+    "title_color": "#f78f3f",
+    "text_color": "#ffffff",
+    "icon_color": "#e23636",
+    "font_family": "Impact, sans-serif",
+    "title_font_size": 22,
+    "text_font_size": 14
+}

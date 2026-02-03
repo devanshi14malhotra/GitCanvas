@@ -1,0 +1,10 @@
+{
+    "bg_color": "#282a36",
+    "border_color": "#bd93f9",
+    "title_color": "#ff79c6",
+    "text_color": "#f8f8f2",
+    "icon_color": "#50fa7b",
+    "font_family": "Segoe UI, Ubuntu, Sans-Serif",
+    "title_font_size": 20,
+    "text_font_size": 14
+}

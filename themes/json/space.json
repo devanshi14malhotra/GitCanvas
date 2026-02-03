@@ -1,0 +1,10 @@
+{
+    "bg_color": "#0b0c1f",
+    "border_color": "#6e5cdb",
+    "title_color": "#a371f7",
+    "text_color": "#d0dfff",
+    "icon_color": "#39d353",
+    "font_family": "Verdana, Geneva, sans-serif",
+    "title_font_size": 18,
+    "text_font_size": 14
+}
