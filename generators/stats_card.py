@@ -2,6 +2,12 @@ import svgwrite
 from themes.styles import THEMES
 
 def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors=None):
+    # Handling API Error first 
+    if data is None or "error" in data:
+        return draw_error_stats_svg(
+            data.get("error", "UNKNOWN") if isinstance(data, dict) else "UNKNOWN"
+        )
+    
     """
     Generates the Main Stats Card SVG.
     data: dict with user stats
@@ -67,4 +73,39 @@ def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors
                              
             current_y += item_height
             
+    return dwg.tostring()
+
+# defining draw_error_stats_svg
+def draw_error_stats_svg(error_type):
+    messages = {
+        "USER_NOT_FOUND": "GitHub User Not Found",
+        "RATE_LIMITED": "GitHub API Rate Limited",
+        "GITHUB_API_ERROR": "GitHub API Error",
+        "INTERNAL_ERROR": "Internal Server Error",
+        "UNKNOWN": "Something went wrong"
+    }
+
+    msg = messages.get(error_type, "Error")
+
+    dwg = svgwrite.Drawing(size=("450px", "120px"))
+    dwg.add(dwg.rect(
+        insert=(0, 0),
+        size=("100%", "100%"),
+        rx=10,
+        ry=10,
+        fill="#0d1117",
+        stroke="#30363d",
+        stroke_width=2
+    ))
+
+    dwg.add(dwg.text(
+        msg,
+        insert=("50%", "55%"),
+        text_anchor="middle",
+        fill="#f85149",
+        font_size="18",
+        font_family="monospace",
+        font_weight="bold"
+    ))
+
     return dwg.tostring()

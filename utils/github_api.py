@@ -12,8 +12,14 @@ def get_live_github_data(username):
         # User details
         user_url = f"https://api.github.com/users/{username}"
         user_resp = requests.get(user_url)
+        if user_resp.status_code == 404:
+            return {"error": "USER_NOT_FOUND"}
+        if user_resp.status_code == 403:
+            return {"error": "RATE_LIMITED"}
+
         if user_resp.status_code != 200:
-            return None
+            return {"error": "GITHUB_API_ERROR"}
+
         user_data = user_resp.json()
         
         # Repos for stars count (limited to first 100 public repos for basic sum without pagination for MVP speed)
@@ -58,7 +64,8 @@ def get_live_github_data(username):
             
     except Exception as e:
         print(f"Error: {e}")
-        return None
+        return {"error": "INTERNAL_ERROR"}
+
 
 def get_mock_data(username):
     """Returns dummy data for layout testing/building without hitting API limits"""

@@ -82,6 +82,10 @@ with st.sidebar:
 @st.cache_data
 def load_data(user):
     d = github_api.get_live_github_data(user)
+    if isinstance(d, dict) and d.get("error") == "User not found":
+        st.error("GitHub username does not exist.")
+        return None
+
     if not d:
         st.warning("Using mock data (API limits).")
         d = github_api.get_mock_data(user)

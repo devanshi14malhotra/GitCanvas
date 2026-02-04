@@ -7,6 +7,12 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None):
     Generates the Contribution Graph Card SVG.
     Supports 'Snake', 'Space', 'Marvel' visualization logic.
     """
+
+    # handling api error or invalid username 
+    if data is None or "error" in data:
+        return draw_error_contrib_svg(
+            data.get("error", "UNKNOWN") if isinstance(data, dict) else "UNKNOWN"
+        )
     theme = THEMES.get(theme_name, THEMES["Default"]).copy()
     if custom_colors:
         theme.update(custom_colors)
@@ -143,3 +149,39 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None):
                 dwg.add(dwg.rect(insert=(x, y), size=(box_size, box_size), fill=fill, rx=2, ry=2))
                 
     return dwg.tostring()
+
+
+# contribution error SVG 
+def draw_error_contrib_svg(error_type):
+    messages = {
+        "USER_NOT_FOUND": "GitHub User Not Found",
+        "RATE_LIMITED": "GitHub API Rate Limited",
+        "GITHUB_API_ERROR": "GitHub API Error",
+        "UNKNOWN": "Something went wrong"
+    }
+
+    msg = messages.get(error_type, "Error")
+
+    dwg = svgwrite.Drawing(size=("450", "120px"))
+    dwg.add(dwg.rect(
+        insert=(0, 0),
+        size=("100%", "100%"),
+        rx=10,
+        ry=10,
+        fill="#0d1117",
+        stroke="#30363d",
+        stroke_width=2
+    ))
+
+    dwg.add(dwg.text(
+        msg,
+        insert=("50%", "55%"),
+        text_anchor="middle",
+        fill="#f85149",
+        font_size="18",
+        font_family="monospace",
+        font_weight="bold"
+    ))
+
+    return dwg.tostring()
+

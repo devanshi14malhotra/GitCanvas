@@ -5,6 +5,12 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None):
     """
     Generates the Top Languages Card SVG.
     """
+
+    # handle API Error or invalid user 
+    if data is None or "error" in data:
+        return draw_error_lang_svg(
+            data.get("error", "UNKNOWN") if isinstance(data, dict) else "UNKNOWN"
+        )
     theme = THEMES.get(theme_name, THEMES["Default"]).copy()
     if custom_colors:
         theme.update(custom_colors)
@@ -60,4 +66,38 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None):
         bar_color = theme["title_color"]
         dwg.add(dwg.rect(insert=(20, bar_y), size=(fill_width, 6), rx=3, ry=3, fill=bar_color))
         
+    return dwg.tostring()
+
+# error SVG 
+def draw_error_lang_svg(error_type):
+    messages = {
+        "USER_NOT_FOUND": "GitHub User Not Found",
+        "RATE_LIMITED": "GitHub API Rate Limited",
+        "GITHUB_API_ERROR": "GitHub API Error",
+        "UNKNOWN": "Something went wrong"
+    }
+
+    msg = messages.get(error_type, "Error")
+
+    dwg = svgwrite.Drawing(size=("450px", "120px"))
+    dwg.add(dwg.rect(
+        insert=(0, 0),
+        size=("100%", "100%"),
+        rx=10,
+        ry=10,
+        fill="#0d1117",
+        stroke="#30363d",
+        stroke_width=2
+    ))
+
+    dwg.add(dwg.text(
+        msg,
+        insert=("50%", "55%"),
+        text_anchor="middle",
+        fill="#f85149",
+        font_size="18",
+        font_family="monospace",
+        font_weight="bold"
+    ))
+
     return dwg.tostring()
