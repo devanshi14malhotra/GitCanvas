@@ -1,9 +1,30 @@
-from fastapi import FastAPI, Response, Query
+import hashlib
+from fastapi import FastAPI, Response, Query , Request
 from generators import stats_card, lang_card, contrib_card
 from utils import github_api
 from typing import Optional
 
 app = FastAPI()
+
+# Implements HTTP conditional requests for CDN-safe SVG caching
+
+def svg_response(svg_content: str, request: Request):
+    etag = hashlib.md5(svg_content.encode("utf-8")).hexdigest()
+
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304)
+
+    return Response(
+        content=svg_content,
+        media_type="image/svg+xml",
+        headers={
+            "Cache-Control": "public, max-age=14400, s-maxage=14400",
+            "ETag": etag,
+            "Vary": "Accept-Encoding"
+        }
+    )
+
+
 
 @app.get("/")
 def read_root():
@@ -20,6 +41,7 @@ def parse_colors(bg_color, title_color, text_color, border_color):
 
 @app.get("/api/stats")
 async def get_stats(
+    request: Request,
     username: str, 
     theme: str = "Default", 
     hide_stars: bool = False,
@@ -42,10 +64,12 @@ async def get_stats(
     
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = stats_card.draw_stats_card(data, theme, show_options=show_options, custom_colors=custom_colors)
-    return Response(content=svg_content, media_type="image/svg+xml")
+    return svg_response(svg_content , request)
+
 
 @app.get("/api/languages")
 async def get_languages(
+    request: Request,
     username: str,
     theme: str = "Default",
     bg_color: Optional[str] = None,
@@ -56,10 +80,12 @@ async def get_languages(
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = lang_card.draw_lang_card(data, theme, custom_colors=custom_colors)
-    return Response(content=svg_content, media_type="image/svg+xml")
+    return svg_response(svg_content , request)
+
 
 @app.get("/api/contributions")
 async def get_contributions(
+    request: Request,
     username: str,
     theme: str = "Default",
     bg_color: Optional[str] = None,
@@ -70,4 +96,5 @@ async def get_contributions(
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = contrib_card.draw_contrib_card(data, theme, custom_colors=custom_colors)
-    return Response(content=svg_content, media_type="image/svg+xml")
+    return svg_response(svg_content , request)
+
