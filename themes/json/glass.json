@@ -1,10 +1,10 @@
 {
     "bg_color": "#020617",
-    "title_color": "#e5f4ff",
+    "title_color": "#e0f2fe",
     "text_color": "#cbd5f5",
     "border_color": "#38bdf8",
-    "icon_color": "#38bdf8",
+    "icon_color": "#7dd3fc",
     "font_family": "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    "title_font_size": 20,
+    "title_font_size": 22,
     "text_font_size": 14
   }
