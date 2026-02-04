@@ -48,6 +48,7 @@ async def get_stats(
 async def get_languages(
     username: str,
     theme: str = "Default",
+    exclude: Optional[str] = None,
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
@@ -55,7 +56,13 @@ async def get_languages(
 ):
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
-    svg_content = lang_card.draw_lang_card(data, theme, custom_colors=custom_colors)
+    
+    # Parse exclude parameter into list of languages
+    excluded_languages = []
+    if exclude:
+        excluded_languages = [lang.strip() for lang in exclude.split(',') if lang.strip()]
+    
+    svg_content = lang_card.draw_lang_card(data, theme, custom_colors=custom_colors, excluded_languages=excluded_languages)
     return Response(content=svg_content, media_type="image/svg+xml")
 
 @app.get("/api/contributions")

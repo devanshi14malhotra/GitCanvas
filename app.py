@@ -103,7 +103,7 @@ def show_code_area(code_content, label="Markdown Code"):
     st.markdown(f"**{label}** (Copy below)")
     st.text_area(label, value=code_content, height=100, label_visibility="collapsed")
 
-def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hide_params=None, code_template=None):
+def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hide_params=None, code_template=None, excluded_languages=None):
     col1, col2 = st.columns([1.5, 1])
     with col1:
         # Render SVG
@@ -123,6 +123,11 @@ def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hid
             params.append(f"theme={selected_theme}")
         for k, v in custom_colors.items():
             params.append(f"{k}={v.replace('#', '')}")
+        
+        # Add exclude parameter for languages endpoint
+        if excluded_languages and endpoint == "languages":
+            # Remove spaces and add to params
+            params.append(f"exclude={excluded_languages.replace(' ', '')}")
 
         query_str = "&".join(params)
         if query_str:
@@ -153,8 +158,25 @@ with tab1:
 
 with tab2:
     st.subheader("Top Languages")
-    svg_bytes = lang_card.draw_lang_card(data, selected_theme, custom_colors)
-    render_tab(svg_bytes, "languages", username, selected_theme, custom_colors, code_template="![Top Langs]({url})")
+    
+    # Get available languages from data
+    available_languages = [lang for lang, _ in data.get("top_languages", [])]
+    
+    # Use st.pills() for better UX - click to toggle, no dropdown to close
+    excluded_languages = st.pills(
+        "Languages to Exclude:",
+        options=available_languages,
+        default=[],
+        selection_mode="multi",
+        help="Click to toggle languages you want to hide from your stats"
+    )
+    
+    # Convert list to comma-separated string for URL generation
+    excluded_languages_str = ",".join(excluded_languages) if excluded_languages else None
+    
+    # Generate card with exclusions
+    svg_bytes = lang_card.draw_lang_card(data, selected_theme, custom_colors, excluded_languages=excluded_languages)
+    render_tab(svg_bytes, "languages", username, selected_theme, custom_colors, code_template="![Top Langs]({url})", excluded_languages=excluded_languages_str)
 
 with tab3:
     st.subheader("Contribution Graph")
