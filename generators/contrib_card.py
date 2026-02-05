@@ -1,7 +1,7 @@
 import svgwrite
 import random
 from themes.styles import THEMES
-
+import math
 def draw_contrib_card(data, theme_name="Default", custom_colors=None):
     """
     Generates the Contribution Graph Card SVG.
@@ -353,14 +353,34 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None):
     elif theme_name == "Space":
         # Spaceship logic
         # Commits are stars.
-        
-        # Draw random stars
-        for _ in range(30):
-            sx = random.randint(20, width-20)
-            sy = random.randint(50, height-20)
+        dwg.defs.add(dwg.style("""
+            @keyframes twinkle {
+            0%   { opacity: 0.3; }
+            50%  { opacity: 1; }
+            100% { opacity: 0.3; }
+            }
+
+            .star {
+            animation: twinkle 2s ease-in-out infinite;
+            }
+            """))
+
+        for i in range(30):
+            sx = random.randint(20, width - 20)
+            sy = random.randint(50, height - 20)
             r = random.uniform(1, 3)
-            dwg.add(dwg.circle(center=(sx, sy), r=r, fill="white", opacity=random.uniform(0.5, 1.0)))
-            
+            delay = random.uniform(0, 2)
+
+            star = dwg.circle(
+                center=(sx, sy),
+                r=r,
+                fill="white",
+                class_="star",
+                style=f"animation-delay: {delay}s"
+            )
+
+            dwg.add(star)
+
         # Draw Spaceship (Simple triangle)
         ship_x = width - 60
         ship_y = height / 2 + 10
@@ -574,6 +594,83 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None):
                 y += cell_y_gap
             else:
                 x += cell_x_gap
+                
+    elif theme_name == "Neural":
+        cx = width / 2
+        cy = height / 2 + 10
+
+        contributions = data.get("contributions", [])[-80:]
+        if not contributions:
+            return dwg.tostring()
+
+        nodes = []
+
+        # --- Brain core glow ---
+        dwg.add(dwg.circle(center=(cx, cy), r=45, fill="#00f7ff", opacity=0.08))
+        dwg.add(dwg.text(
+            "Contributions",
+            insert=(cx, cy + 5),
+            text_anchor="middle",
+            fill="#00f7ff",
+            font_size="12px",
+            font_family="Courier New",
+            opacity=0.8
+        ))
+
+        # --- Generate brain-shaped neuron positions ---
+        for i, day in enumerate(contributions):
+            count = day.get("count", 0)
+
+            # Hemisphere split
+            side = -1 if i % 2 == 0 else 1
+
+            # Organic brain ellipse
+            angle = random.uniform(0, math.pi)
+            radius_x = random.uniform(90, 150)
+            radius_y = random.uniform(60, 110)
+
+            # Distortion noise
+            noise = random.uniform(0.85, 1.15)
+
+            x = cx + side * math.cos(angle) * radius_x * noise
+            y = cy + math.sin(angle) * radius_y * noise
+
+            # Visual weight
+            size = 2 + min(count, 10)
+            brightness = min(255, 80 + count * 18)
+            color = f"rgb(0,{brightness},255)"
+
+            dwg.add(dwg.circle(
+                center=(x, y),
+                r=size,
+                fill=color,
+                opacity=0.9
+            ))
+
+            nodes.append((x, y, count))
+
+        # --- Synapse connections ---
+        for i in range(len(nodes)):
+            x1, y1, c1 = nodes[i]
+
+            # Each neuron connects to a few others
+            for _ in range(random.randint(2, 6)):
+                j = random.randint(0, len(nodes) - 1)
+                x2, y2, c2 = nodes[j]
+
+                dist = math.hypot(x2 - x1, y2 - y1)
+
+                if dist < 140:
+                    opacity = min((c1 + c2) / 20, 0.5)
+
+                    dwg.add(dwg.line(
+                        start=(x1, y1),
+                        end=(x2, y2),
+                        stroke="#00f7ff",
+                        stroke_width=1,
+                        opacity=opacity
+                    ))
+
     else:
         # Default Grid (Github Style)
         # Just simple squares

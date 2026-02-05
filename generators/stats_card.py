@@ -25,14 +25,47 @@ def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors
     
     dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
     
-    # Background
+    # Add minimal CSS animations
+    style = dwg.defs.add(dwg.style("""
+        /* Minimal keyframes for text fade-in */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Minimal keyframes for number count-up effect */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Apply animations to text elements */
+        .title-text {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        .stat-label {
+            animation: fadeIn 0.6s ease-out;
+            animation-delay: 0.2s;
+            animation-fill-mode: both;
+        }
+        
+        .stat-value {
+            animation: slideUp 0.5s ease-out;
+            animation-delay: 0.4s;
+            animation-fill-mode: both;
+        }
+    """))
+    
+    # Background (no animation)
     dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), rx=10, ry=10, 
                      fill=theme["bg_color"], stroke=theme["border_color"], stroke_width=2))
     
-    # Title
+    # Title with animation
     font_family = theme["font_family"]
     dwg.add(dwg.text(f"{data['username']}'s Stats", insert=(20, 35), 
-                     fill=theme["title_color"], font_size=theme["title_font_size"], font_family=font_family, font_weight="bold"))
+                     fill=theme["title_color"], font_size=theme["title_font_size"], 
+                     font_family=font_family, font_weight="bold", class_="title-text"))
     
     # Stats
     start_y = 65
@@ -40,30 +73,28 @@ def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors
     text_color = theme["text_color"]
     font_size = theme["text_font_size"]
     
-    # Logic to handle N/A display for commits if the value is 0 (API error)
-    commit_val = data.get('total_commits', 0)
-    # If commit_val is 0, we show "N/A", otherwise we show the number
-    display_commits = str(commit_val) if commit_val > 0 else "N/A"
-
     stats_map = [
         ("stars", "Total Stars", f"{data.get('total_stars', 0)}"),
-        ("commits", "Total Commits", display_commits),
+        ("commits", "Total Commits (Year)", f"{data.get('total_commits', 'N/A')}"),
         ("repos", "Public Repos", f"{data.get('public_repos', 0)}"),
         ("followers", "Followers", f"{data.get('followers', 0)}")
     ]
     
     for key, label, value in stats_map:
         if show_options.get(key, True):
-            # Icon approximation (Circle)
+            # Icon (no animation)
             dwg.add(dwg.circle(center=(30, current_y - 5), r=4, fill=theme["icon_color"]))
             
-            # Label
+            # Label with fade-in animation
             dwg.add(dwg.text(f"{label}:", insert=(45, current_y), 
-                             fill=text_color, font_size=font_size, font_family=font_family))
+                             fill=text_color, font_size=font_size, 
+                             font_family=font_family, class_="stat-label"))
             
-            # Value (Right aligned roughly)
+            # Value with slide-up animation
             dwg.add(dwg.text(f"{value}", insert=(width - 40, current_y), 
-                             fill=text_color, font_size=font_size, font_family=font_family, text_anchor="end", font_weight="bold"))
+                             fill=text_color, font_size=font_size, 
+                             font_family=font_family, text_anchor="end", 
+                             font_weight="bold", class_="stat-value"))
                              
             current_y += item_height
             

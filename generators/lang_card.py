@@ -1,9 +1,16 @@
 import svgwrite
+import math
 from themes.styles import THEMES
 
-def draw_lang_card(data, theme_name="Default", custom_colors=None):
+def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_languages=None):
     """
     Generates the Top Languages Card SVG.
+    
+    Args:
+        data: dict with user stats including 'top_languages'
+        theme_name: string key from THEMES
+        custom_colors: dict with custom color overrides
+        excluded_languages: list of language names to exclude (case-insensitive)
     """
     theme = THEMES.get(theme_name, THEMES["Default"]).copy()
     if custom_colors:
@@ -12,6 +19,18 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None):
     width = 300
     # Dynamic height based on languages (max 5)
     langs = data.get("top_languages", [])
+    
+    # Apply exclusion filter if provided
+    if excluded_languages and langs:
+        # Convert excluded languages to lowercase for case-insensitive matching
+        excluded_lower = [lang.lower() for lang in excluded_languages]
+        langs = [
+            (lang, count) 
+            for lang, count in langs 
+            if lang.lower() not in excluded_lower
+        ]
+    
+    # Handle empty result after filtering
     if not langs:
         langs = [("No Data", 0)]
         
@@ -54,10 +73,31 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None):
         bar_width = width - 40
         dwg.add(dwg.rect(insert=(20, bar_y), size=(bar_width, 6), rx=3, ry=3, fill=theme["border_color"], opacity=0.3))
         
-        # Progress Bar Fill
+        # Progress Bar Fill with sine wave animation
         fill_width = (pct / 100) * bar_width
-        # Use icon_color or title_color for bar fill
         bar_color = theme["title_color"]
-        dwg.add(dwg.rect(insert=(20, bar_y), size=(fill_width, 6), rx=3, ry=3, fill=bar_color))
+        
+        # Create the progress bar fill
+        progress_fill = dwg.rect(
+            insert=(20, bar_y), 
+            size=(0, 6),  # Start with 0 width
+            rx=3, 
+            ry=3, 
+            fill=bar_color
+        )
+        
+        # Add sine wave animation 
+        progress_fill.add(dwg.animate(
+            attributeName="width",
+            values="0;{0}".format(fill_width),
+            keyTimes="0;1",
+            calcMode="spline",
+            keySplines="0.445 0.05 0.55 0.95",  # Sine curve approximation
+            dur="1s",
+            begin="0s",
+            fill="freeze"
+        ))
+        
+        dwg.add(progress_fill)
         
     return dwg.tostring()

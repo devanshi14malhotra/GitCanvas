@@ -8,6 +8,11 @@ TECH_STACK = {
         "C++": {"color": "00599C", "logo": "cplusplus"},
         "Rust": {"color": "000000", "logo": "rust"},
         "Go": {"color": "00ADD8", "logo": "go"},
+        "C#": {"color": "239120", "logo": "csharp"},
+        "PHP": {"color": "777BB4", "logo": "php"},
+        "Ruby": {"color": "CC342D", "logo": "ruby"},
+        "Swift": {"color": "FA7343", "logo": "swift"},
+        "Kotlin": {"color": "7F52FF", "logo": "kotlin"},
     },
     "Frontend": {
         "React": {"color": "61DAFB", "logo": "react"},
@@ -17,6 +22,11 @@ TECH_STACK = {
         "TailwindCSS": {"color": "06B6D4", "logo": "tailwindcss"},
         "HTML5": {"color": "E34F26", "logo": "html5"},
         "CSS3": {"color": "1572B6", "logo": "css3"},
+        "Sass": {"color": "CC6699", "logo": "sass"},
+        "Bootstrap": {"color": "7952B3", "logo": "bootstrap"},
+        "Next.js": {"color": "000000", "logo": "nextdotjs"},
+        "Nuxt.js": {"color": "00DC82", "logo": "nuxtdotjs"},
+        "Svelte": {"color": "FF3E00", "logo": "svelte"},
     },
     "Backend & DB": {
         "Node.js": {"color": "339933", "logo": "nodedotjs"},
@@ -32,6 +42,12 @@ TECH_STACK = {
         "AWS": {"color": "232F3E", "logo": "amazonwebservices"},
         "Figma": {"color": "F24E1E", "logo": "figma"},
         "Linux": {"color": "FCC624", "logo": "linux"},
+        "VS Code": {"color": "007ACC", "logo": "visualstudiocode"},
+        "Postman": {"color": "FF6C37", "logo": "postman"},
+        "Kubernetes": {"color": "326CE5", "logo": "kubernetes"},
+        "Jenkins": {"color": "D24939", "logo": "jenkins"},
+        "GitHub": {"color": "181717", "logo": "github"},
+        "Jira": {"color": "0052CC", "logo": "jira"},
     }
 }
 
