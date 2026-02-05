@@ -168,105 +168,147 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None):
                 dwg.add(dwg.rect(insert=(hx + 2, hy + 2), size=(2, 2), fill="black"))
                 dwg.add(dwg.rect(insert=(hx + tile_size - 4, hy + 2), size=(2, 2), fill="black"))
         else:
-            # --- STEP 4: Build deterministic snake path with visual "movement" ---
-            # Strategy: Follow chronological order through the grid, creating a winding path
+            # --- STEP 4: Identify "food" hotspots (top commit days) ---
+            # Find top N days by commit count - these are food targets
+            sorted_by_count = sorted(active_days, key=lambda c: c["count"], reverse=True)
+            num_food = min(max(5, len(active_days) // 5), 15)  # 5-15 food targets
+            food_days = {c["index"]: c for c in sorted_by_count[:num_food]}
             
-            # Sort active days chronologically (oldest first)
-            active_days_sorted = sorted(active_days, key=lambda c: c["index"])
+            # --- STEP 5: Build zig-zag snake path (GitHub-style weeks) ---
+            # Strategy: Zig-zag through grid left→right, then down, then right→left
+            # This creates visual "movement" without animation
             
-            # Identify "food" days (high commit counts) - top 30% by count
-            max_count = max((d["count"] for d in active_days), default=1)
-            food_threshold = max(3, max_count * 0.3)  # Top 30% = "food"
-            food_days = {c["index"]: c for c in active_days if c["count"] >= food_threshold}
+            # Create a lookup: (week_col, day_row) → cell data
+            grid_lookup = {}
+            for cell in grid_cells:
+                week_col = (cell["x"] - start_x) // (tile_size + gap)
+                day_row = (cell["y"] - start_y) // (tile_size + gap)
+                grid_lookup[(week_col, day_row)] = cell
             
-            # Calculate snake length: proportional to activity, but ensure visible path
-            total_active = len(active_days)
-            snake_length = min(max(15, total_active // 2), 40)  # 15-40 segments
+            # Also create reverse lookup: index → cell
+            index_lookup = {cell["index"]: cell for cell in grid_cells}
             
-            # Build path: follow chronological order, creating a visible winding path
             snake_segments = []
             visited_indices = set()
             
-            # Start from oldest active day
-            current_idx = 0
-            current = active_days_sorted[current_idx]
-            snake_segments.append((current["x"], current["y"]))
-            visited_indices.add(current["index"])
+            # Calculate snake length based on activity
+            total_active = len(active_days)
+            snake_length = min(max(20, total_active // 2), 50)  # 20-50 segments
             
-            # Build path by following chronological order, but skip some days to create movement
-            # This creates a "snake" that winds through the grid chronologically
-            step_size = max(1, len(active_days_sorted) // snake_length)  # Skip days to create path
-            
-            while len(snake_segments) < snake_length and current_idx < len(active_days_sorted) - 1:
-                # Look ahead for next segment
-                next_idx = min(current_idx + step_size, len(active_days_sorted) - 1)
+            # Build zig-zag path: traverse weeks, alternating row direction
+            # Week 0: rows 0→6 (left→right), Week 1: rows 6→0 (right→left), etc.
+            for week_col in range(min(cols, snake_length // rows + 3)):
+                if len(snake_segments) >= snake_length:
+                    break
                 
-                # If we've reached the end, try to find nearby unvisited days
-                if next_idx == current_idx:
-                    # Find any unvisited day
-                    for candidate in active_days_sorted[current_idx + 1:]:
-                        if candidate["index"] not in visited_indices:
-                            next_cell = candidate
-                            snake_segments.append((next_cell["x"], next_cell["y"]))
-                            visited_indices.add(next_cell["index"])
-                            current_idx = active_days_sorted.index(next_cell)
-                            break
-                    else:
-                        break  # No more unvisited days
+                # Alternate direction: even weeks go top→bottom, odd weeks go bottom→top
+                is_top_to_bottom = (week_col % 2 == 0)
+                
+                if is_top_to_bottom:
+                    row_range = range(rows)  # 0 to 6
                 else:
-                    next_cell = active_days_sorted[next_idx]
-                    if next_cell["index"] not in visited_indices:
-                        snake_segments.append((next_cell["x"], next_cell["y"]))
-                        visited_indices.add(next_cell["index"])
-                        current_idx = next_idx
-                    else:
-                        # Already visited, try next
-                        current_idx += 1
-                        if current_idx >= len(active_days_sorted) - 1:
+                    row_range = range(rows - 1, -1, -1)  # 6 to 0
+                
+                for day_row in row_range:
+                    if len(snake_segments) >= snake_length:
+                        break
+                    
+                    pos = (week_col, day_row)
+                    if pos in grid_lookup:
+                        cell = grid_lookup[pos]
+                        # Prioritize active days, but include some empty cells to maintain path
+                        if cell["count"] > 0 or (len(snake_segments) < 3 and cell["index"] not in visited_indices):
+                            snake_segments.append((cell["x"], cell["y"], cell["index"]))
+                            visited_indices.add(cell["index"])
+            
+            # Ensure we pass through food hotspots
+            # Insert food days into path if not already included
+            for food_idx, food_cell in food_days.items():
+                if food_cell["index"] not in visited_indices:
+                    # Find insertion point (chronologically closest)
+                    insert_idx = len(snake_segments)
+                    for i, (_, _, seg_idx) in enumerate(snake_segments):
+                        if seg_idx > food_cell["index"]:
+                            insert_idx = i
                             break
+                    snake_segments.insert(insert_idx, (food_cell["x"], food_cell["y"], food_cell["index"]))
+                    visited_indices.add(food_cell["index"])
+            
+            # Trim to desired length
+            snake_segments = snake_segments[:snake_length]
             
             # Ensure head is at the most recent active day
             most_recent = max(active_days, key=lambda c: c["index"])
-            if most_recent["index"] not in visited_indices:
-                # Add most recent as head
-                snake_segments.append((most_recent["x"], most_recent["y"]))
-                visited_indices.add(most_recent["index"])
-            elif len(snake_segments) > 1 and (most_recent["x"], most_recent["y"]) != snake_segments[-1]:
-                # Move most recent to end if not already there
-                if (most_recent["x"], most_recent["y"]) in snake_segments:
-                    snake_segments.remove((most_recent["x"], most_recent["y"]))
-                snake_segments.append((most_recent["x"], most_recent["y"]))
             
-            # --- STEP 5: Draw "food" tiles FIRST (so snake appears on top) ---
-            # Draw food tiles for high-commit days, even if snake passes through them
+            # Remove most_recent if already in path, then add to end
+            snake_segments = [(x, y, idx) for x, y, idx in snake_segments if idx != most_recent["index"]]
+            snake_segments.append((most_recent["x"], most_recent["y"], most_recent["index"]))
+            
+            # --- STEP 6: Draw "food" tiles FIRST (so snake appears on top) ---
             for cell_idx, cell in food_days.items():
                 cx = cell["x"] + tile_size / 2
                 cy = cell["y"] + tile_size / 2
-                # Red apple (drawn before snake so snake appears on top)
+                # Glowing red apple
                 dwg.add(
                     dwg.circle(
                         center=(cx, cy),
-                        r=tile_size * 0.4,
+                        r=tile_size * 0.45,
+                        fill="#ff1744",
+                        fill_opacity=0.95,
+                    )
+                )
+                # Outer glow
+                dwg.add(
+                    dwg.circle(
+                        center=(cx, cy),
+                        r=tile_size * 0.55,
                         fill="#ff5252",
-                        fill_opacity=0.9,
+                        fill_opacity=0.3,
                     )
                 )
                 # Small green leaf
                 dwg.add(
                     dwg.rect(
-                        insert=(cx - 1.5, cy - tile_size * 0.4 - 2),
-                        size=(3, 4),
+                        insert=(cx - 2, cy - tile_size * 0.45 - 3),
+                        size=(4, 5),
                         fill="#43a047",
                     )
                 )
             
-            # --- STEP 6: Draw snake body (all segments except head) ---
-            for sx, sy in snake_segments[:-1]:
+            # --- STEP 7: Draw snake with time-gradient colors ---
+            # Color gradient: tail (old) = darker green, head (new) = bright neon
+            num_segments = len(snake_segments)
+            
+            # Color stops
+            tail_color = "#1f6f1f"  # Dark green (old commits)
+            mid_color = "#00c853"   # Medium green
+            head_color = "#7CFF00"  # Bright neon green (new commits)
+            
+            for i, (sx, sy, seg_idx) in enumerate(snake_segments[:-1]):
+                # Calculate gradient position (0 = tail, 1 = head)
+                t = i / max(1, num_segments - 1)
+                
+                # Interpolate color
+                if t < 0.5:
+                    # Tail to mid
+                    local_t = t * 2
+                    r = int(int(tail_color[1:3], 16) * (1 - local_t) + int(mid_color[1:3], 16) * local_t)
+                    g = int(int(tail_color[3:5], 16) * (1 - local_t) + int(mid_color[3:5], 16) * local_t)
+                    b = int(int(tail_color[5:7], 16) * (1 - local_t) + int(mid_color[5:7], 16) * local_t)
+                else:
+                    # Mid to head
+                    local_t = (t - 0.5) * 2
+                    r = int(int(mid_color[1:3], 16) * (1 - local_t) + int(head_color[1:3], 16) * local_t)
+                    g = int(int(mid_color[3:5], 16) * (1 - local_t) + int(head_color[3:5], 16) * local_t)
+                    b = int(int(mid_color[5:7], 16) * (1 - local_t) + int(head_color[5:7], 16) * local_t)
+                
+                segment_color = f"#{r:02x}{g:02x}{b:02x}"
+                
                 dwg.add(
                     dwg.rect(
                         insert=(sx, sy),
                         size=(tile_size, tile_size),
-                        fill=theme["icon_color"],
+                        fill=segment_color,
                         rx=2,
                         ry=2,
                         stroke="#020617",
@@ -274,25 +316,39 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None):
                     )
                 )
             
-            # --- STEP 7: Draw snake head (most recent day) ---
+            # --- STEP 8: Draw snake head with glow effect ---
             if snake_segments:
-                hx, hy = snake_segments[-1]
+                hx, hy, _ = snake_segments[-1]
+                
+                # Head glow (outer)
+                dwg.add(
+                    dwg.rect(
+                        insert=(hx - 1, hy - 1),
+                        size=(tile_size + 2, tile_size + 2),
+                        fill="#7CFF00",
+                        fill_opacity=0.4,
+                        rx=3,
+                        ry=3,
+                    )
+                )
+                
+                # Head (bright neon)
                 dwg.add(
                     dwg.rect(
                         insert=(hx, hy),
                         size=(tile_size, tile_size),
-                        fill=theme["title_color"],
+                        fill=head_color,
                         rx=2,
                         ry=2,
                         stroke="#020617",
-                        stroke_width=1,
+                        stroke_width=1.5,
                     )
                 )
                 
                 # Pixel eyes on head
-                eye = 2.5
-                dwg.add(dwg.rect(insert=(hx + 2.5, hy + 2.5), size=(eye, eye), fill="black"))
-                dwg.add(dwg.rect(insert=(hx + tile_size - eye - 2.5, hy + 2.5), size=(eye, eye), fill="black"))
+                eye = 3
+                dwg.add(dwg.rect(insert=(hx + 3, hy + 3), size=(eye, eye), fill="black"))
+                dwg.add(dwg.rect(insert=(hx + tile_size - eye - 3, hy + 3), size=(eye, eye), fill="black"))
 
     elif theme_name == "Space":
         # Spaceship logic
