@@ -65,7 +65,7 @@ THEMES = {
 import json
 import os
 
-THEMES = {}
+
 
 themes_dir = os.path.join(os.path.dirname(__file__), 'json')
 if os.path.exists(themes_dir):
