@@ -1,4 +1,14 @@
 import svgwrite
+import math
+
+INFINITY_COLORS = [
+    "#3B82F6",  # Space (blue)
+    "#FACC15",  # Mind (yellow)
+    "#EF4444",  # Reality (red)
+    "#A855F7",  # Power (purple)
+    "#22C55E",  # Time (green)
+    "#F97316",  # Soul (orange)
+]
 
 def render(data):
     """
@@ -43,11 +53,9 @@ def render(data):
     dwg.add(dwg.circle(center=(cx, cy), r=60, fill="#E0FFFF", fill_opacity=0.9))
     # Triangle (optional) or just circles
     
-    # Commits as "Energy Cells" around the reactor ?? 
-    # Let's add some orbiting particles based on recent contributions
-    # Just a few
+    # Commits as "Energy Cells" around the reactor - Infinity Stone colors
     commits = [d for d in data['contributions'][-20:] if d['count'] > 0]
-    import math
+    
     for i, com in enumerate(commits):
         angle = i * (360 / 20)
         rad = math.radians(angle)
@@ -57,6 +65,15 @@ def render(data):
         px = cx + math.cos(rad) * dist
         py = cy + math.sin(rad) * dist
         
-        dwg.add(dwg.circle(center=(px, py), r=4, fill="#FF4500"))
+        color = INFINITY_COLORS[i % len(INFINITY_COLORS)]
+        
+        dwg.add(dwg.circle(
+            center=(px, py),
+            r=5,
+            fill=color,
+            stroke="white",
+            stroke_width=1,
+            opacity=0.9
+        ))
         
     return dwg.tostring()
