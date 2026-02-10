@@ -1,6 +1,7 @@
 import svgwrite
 import math
 from themes.styles import THEMES
+from .svg_base import create_svg_base
 
 def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_languages=None):
     """
@@ -12,10 +13,18 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
         custom_colors: dict with custom color overrides
         excluded_languages: list of language names to exclude (case-insensitive)
     """
-    theme = THEMES.get(theme_name, THEMES["Default"]).copy()
-    if custom_colors:
-        theme.update(custom_colors)
+    # FIXED: Handle both string theme name and pre-resolved theme dict
+    if isinstance(theme_name, dict):
+        # Already a theme dictionary (e.g., current_theme_opts from app.py)
+        theme = theme_name.copy()
+    else:
+        # Convert theme_name string to actual theme dictionary
+        theme = THEMES.get(theme_name, THEMES["Default"]).copy()
         
+        # Apply custom colors if provided
+        if custom_colors:
+            theme.update(custom_colors)
+
     width = 300
     # Dynamic height based on languages (max 5)
     langs = data.get("top_languages", [])
@@ -33,7 +42,7 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
     # Handle empty result after filtering
     if not langs:
         langs = [("No Data", 0)]
-        
+
     item_height = 35
     header_height = 40
     height = header_height + (len(langs) * item_height) + 10

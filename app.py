@@ -153,8 +153,8 @@ with tab1:
 
     show_ops = {"stars": show_stars, "commits": show_commits, "repos": show_repos, "followers": show_followers}
 
-    # Render
-    svg_bytes = stats_card.draw_stats_card(data, selected_theme, show_ops, custom_colors)
+    # Render - FIXED: Pass current_theme_opts (dictionary) instead of selected_theme (string)
+    svg_bytes = stats_card.draw_stats_card(data, current_theme_opts, show_ops, custom_colors)
     render_tab(svg_bytes, "stats", username, selected_theme, custom_colors, hide_params=show_ops, code_template=f"[![{username}'s Stats]({{url}})](https://github.com/{{username}})")
 
 with tab2:
@@ -175,8 +175,8 @@ with tab2:
     # Convert list to comma-separated string for URL generation
     excluded_languages_str = ",".join(excluded_languages) if excluded_languages else None
     
-    # Generate card with exclusions
-    svg_bytes = lang_card.draw_lang_card(data, selected_theme, custom_colors, excluded_languages=excluded_languages)
+    # Generate card with exclusions - FIXED: Pass current_theme_opts
+    svg_bytes = lang_card.draw_lang_card(data, current_theme_opts, custom_colors, excluded_languages=excluded_languages)
     render_tab(svg_bytes, "languages", username, selected_theme, custom_colors, code_template="![Top Langs]({url})", excluded_languages=excluded_languages_str)
 
 with tab3:
@@ -186,7 +186,8 @@ with tab3:
     elif selected_theme == "Space": st.caption("🚀 Space Mode: Spaceship traversing the contribution galaxy.")
     elif selected_theme == "Marvel": st.caption("💎 Infinity Mode: Collecting Stones based on activity.")
 
-    svg_bytes = contrib_card.draw_contrib_card(data, selected_theme, custom_colors)
+    # FIXED: Pass current_theme_opts
+    svg_bytes = contrib_card.draw_contrib_card(data, current_theme_opts, custom_colors)
     render_tab(svg_bytes, "contributions", username, selected_theme, custom_colors, code_template="![Contributions]({url})")
 
 with tab4:
@@ -276,7 +277,8 @@ with tab6:
     with col1:
         st.caption("Theme: **{}**".format(selected_theme))
         try:
-            svg_bytes = recent_activity_card.draw_recent_activity_card({'username': username}, selected_theme, custom_colors, token=github_token)
+            # FIXED: Pass current_theme_opts
+            svg_bytes = recent_activity_card.draw_recent_activity_card({'username': username}, current_theme_opts, custom_colors, token=github_token)
         except Exception as e:
             st.error(f"Error rendering recent activity: {e}")
             svg_bytes = recent_activity_card._render_svg_lines([f"Error: {e}"], THEMES.get(selected_theme, THEMES['Default']))

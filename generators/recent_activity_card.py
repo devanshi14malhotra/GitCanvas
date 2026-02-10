@@ -10,8 +10,8 @@ def draw_recent_activity_card(data, theme_name="Default", custom_colors=None, to
 
     Params:
       data: dict with at least 'username'
-      theme_name: theme key from THEMES
-      custom_colors: dict to override theme values
+      theme_name: string key from THEMES OR a theme dictionary (if already resolved)
+      custom_colors: dict to override theme values (only used if theme_name is a string)
       token: optional GitHub token string for higher rate limit
 
     Returns: SVG string
@@ -20,9 +20,17 @@ def draw_recent_activity_card(data, theme_name="Default", custom_colors=None, to
     if not username:
         raise ValueError("data must include 'username'")
 
-    theme = THEMES.get(theme_name, THEMES["Default"]).copy()
-    if custom_colors:
-        theme.update(custom_colors)
+    # FIXED: Handle both string theme name and pre-resolved theme dict
+    if isinstance(theme_name, dict):
+        # Already a theme dictionary (e.g., current_theme_opts from app.py)
+        theme = theme_name.copy()
+    else:
+        # Convert theme_name string to actual theme dictionary
+        theme = THEMES.get(theme_name, THEMES["Default"]).copy()
+        
+        # Apply custom colors if provided
+        if custom_colors:
+            theme.update(custom_colors)
 
     headers = {"Accept": "application/vnd.github.v3+json"}
     if token:
