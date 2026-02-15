@@ -21,9 +21,12 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
         # Convert theme_name string to actual theme dictionary
         theme = THEMES.get(theme_name, THEMES["Default"]).copy()
         
-        # Apply custom colors if provided
-        if custom_colors:
-            theme.update(custom_colors)
+    width = 450 # Resized from 300 to match Stats card
+    
+        
+    # Apply custom colors if provided
+    if custom_colors:
+        theme.update(custom_colors)
 
     width = 300
     # Dynamic height based on languages (max 5)
@@ -46,67 +49,92 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
     item_height = 35
     header_height = 40
     height = header_height + (len(langs) * item_height) + 10
+
     
-    dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
-    
-    # Background
-    dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), rx=10, ry=10, 
-                     fill=theme["bg_color"], stroke=theme["border_color"], stroke_width=2))
-    
-    # Title
-    dwg.add(dwg.text("Top Languages", insert=(20, 30), 
-                     fill=theme["title_color"], font_size=theme["title_font_size"], 
-                     font_family=theme["font_family"], font_weight="bold"))
-    
-    # Content
-    start_y = 60
-    
-    # Calculate total for percentages
-    total_usage = sum(count for _, count in langs)
-    if total_usage == 0: total_usage = 1
-    
-    for i, (lang, count) in enumerate(langs):
-        y = start_y + (i * item_height)
-        pct = (count / total_usage) * 100
+    if theme_name == "Glass":
+        margin = 25
+        # Recalculate height: Margin + Header + Items + Item Padding + Margin
+        header_height = 80
+        item_spacing = 45
+        height = margin + header_height + (len(langs) * item_spacing) + margin
         
-        # Label
-        dwg.add(dwg.text(lang, insert=(20, y), fill=theme["text_color"], 
-                         font_size=theme["text_font_size"], font_family=theme["font_family"]))
+        dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
         
-        # Percentage Text
-        dwg.add(dwg.text(f"{pct:.1f}%", insert=(width - 20, y), fill=theme["text_color"], 
-                         font_size=theme["text_font_size"], font_family=theme["font_family"], text_anchor="end"))
+        # Theme Variables
+        bg_col = theme.get("bg_color", "#050511")
+        title_col = theme.get("title_color", "#00e5ff")
+        text_col = theme.get("text_color", "#e2e8f0")
+        border_col = theme.get("border_color", "white")
         
-        # Progress Bar Background
-        bar_y = y + 5
-        bar_width = width - 40
-        dwg.add(dwg.rect(insert=(20, bar_y), size=(bar_width, 6), rx=3, ry=3, fill=theme["border_color"], opacity=0.3))
+        # 1. Definitions
+        blob_blur = dwg.filter(id="blobBlur", x="-50%", y="-50%", width="200%", height="200%")
+        blob_blur.feGaussianBlur(in_="SourceGraphic", stdDeviation=40)
+        dwg.defs.add(blob_blur)
         
-        # Progress Bar Fill with sine wave animation
-        fill_width = (pct / 100) * bar_width
-        bar_color = theme["title_color"]
+        # Background Base
+        dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), rx=16, ry=16, fill=bg_col))
+
+        # Title
+        dwg.add(dwg.text("Top Languages", insert=(40, 55), fill=title_col, font_size=24, font_weight="bold", font_family="Segoe UI, sans-serif"))
+
+        # Calculate percentages
+        total = sum([c for l, c in langs])
+        if total == 0: total = 1
+
+        for i, (lang, count) in enumerate(langs):
+            y = margin + header_height + (i * item_spacing)
+            pct = (count / total) * 100
+            
+            # Label
+            dwg.add(dwg.text(lang, insert=(40, y), fill=text_col, font_size=16, font_family="Segoe UI, sans-serif"))
+            
+            # Percentage Text
+            dwg.add(dwg.text(f"{pct:.1f}%", insert=(width - 40, y), fill=text_col, font_size=16, font_family="Segoe UI, sans-serif", text_anchor="end"))
+            
+            # Bar Background
+            bar_y = y + 10
+            bar_width = width - 80
+            dwg.add(dwg.rect(insert=(40, bar_y), size=(bar_width, 6), rx=3, ry=3, fill="white", opacity=0.1))
+            
+            # Bar Fill
+            fill_width = (pct / 100) * bar_width
+            dwg.add(dwg.rect(insert=(40, bar_y), size=(fill_width, 6), rx=3, ry=3, fill=title_col))
+
+    else:
+        # DEFAULT / OTHER THEMES
+        dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
         
-        # Create the progress bar fill
-        progress_fill = dwg.rect(
-            insert=(20, bar_y), 
-            size=(0, 6),  # Start with 0 width
-            rx=3, 
-            ry=3, 
-            fill=bar_color
-        )
+        # Background
+        dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), rx=10, ry=10, 
+                         fill=theme["bg_color"], stroke=theme["border_color"], stroke_width=2))
         
-        # Add sine wave animation 
-        progress_fill.add(dwg.animate(
-            attributeName="width",
-            values="0;{0}".format(fill_width),
-            keyTimes="0;1",
-            calcMode="spline",
-            keySplines="0.445 0.05 0.55 0.95",  # Sine curve approximation
-            dur="1s",
-            begin="0s",
-            fill="freeze"
-        ))
+        # Title
+        dwg.add(dwg.text("Top Languages", insert=(20, 30), 
+                         fill=theme["title_color"], font_size=18, font_weight="bold", font_family="Segoe UI, sans-serif"))
         
-        dwg.add(progress_fill)
+        # Calculate percentages
+        total = sum([c for l, c in langs])
+        if total == 0: total = 1
+        
+        start_y = header_height
+        for i, (lang, count) in enumerate(langs):
+            y = start_y + (i * item_height)
+            pct = (count / total) * 100
+            
+            # Language Name
+            dwg.add(dwg.text(lang, insert=(20, y + 20), fill=theme["text_color"], font_size=14, font_family="Segoe UI, sans-serif"))
+            
+            # Bar Background
+            bar_x = 120
+            bar_width = width - bar_x - 50
+            dwg.add(dwg.rect(insert=(bar_x, y + 10), size=(bar_width, 10), rx=5, ry=5, fill="#333"))
+            
+            # Bar Fill
+            fill_width = (pct / 100) * bar_width
+            dwg.add(dwg.rect(insert=(bar_x, y + 10), size=(fill_width, 10), rx=5, ry=5, fill=theme["title_color"]))
+            
+            # Percentage
+            dwg.add(dwg.text(f"{pct:.1f}%", insert=(width - 40, y + 20), fill=theme["text_color"], font_size=12, font_family="Segoe UI, sans-serif", text_anchor="end"))
+
         
     return dwg.tostring()

@@ -55,3 +55,8 @@ desktop.ini
 
 # Logs
 *.log
+
+.env
+.env.text
+.env.example
+.env.* 
