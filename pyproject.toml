@@ -1,0 +1,17 @@
+[project]
+name = "gitcanvas"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "cairosvg==2.7.1",
+    "fastapi>=0.135.1",
+    "google-generativeai>=0.8.6",
+    "openai>=2.26.0",
+    "python-dotenv>=1.2.2",
+    "requests>=2.32.5",
+    "streamlit>=1.55.0",
+    "svgwrite>=1.4.3",
+    "uvicorn>=0.41.0",
+]

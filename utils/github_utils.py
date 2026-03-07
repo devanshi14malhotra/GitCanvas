@@ -2,12 +2,19 @@
 GitHub API utilities for fetching profile data
 """
 
-import requests
+import requests, logging
 from typing import Dict, List, Optional
 from collections import Counter
 
+logging.basicConfig(level=logging.INFO)
+logger=logging.getLogger(__name__)
+
 GITHUB_API_BASE = "https://api.github.com"
 
+HEADERS = {
+    "Accept": "application/vnd.github.v3+json",
+    "User-Agent": "GitCanvas-App"
+}
 
 def fetch_github_stats(username: str) -> Optional[Dict]:
     """
@@ -23,11 +30,16 @@ def fetch_github_stats(username: str) -> Optional[Dict]:
         # Fetch user profile
         user_response = requests.get(
             f"{GITHUB_API_BASE}/users/{username}",
-            headers={"Accept": "application/vnd.github.v3+json"}
+            headers=HEADERS,
+            timeout=5
         )
         
+        if user_response.status_code != 403:
+            logger.warning("Github API rate limit reached")
+            return None
+        
         if user_response.status_code != 200:
-            print(f"Failed to fetch user: {user_response.status_code}")
+            logger.error(f"Failed to fetch user: {user_response.status_code}")
             return None
         
         user_data = user_response.json()
@@ -39,11 +51,12 @@ def fetch_github_stats(username: str) -> Optional[Dict]:
                 "per_page": 100,
                 "sort": "updated"
             },
-            headers={"Accept": "application/vnd.github.v3+json"}
+            headers=HEADERS,
+            timeout=5
         )
         
         if repos_response.status_code != 200:
-            print(f"Failed to fetch repos: {repos_response.status_code}")
+            logger.warning(f"Failed to fetch repos: {repos_response.status_code}")
             repos = []
         else:
             repos = repos_response.json()
@@ -83,8 +96,12 @@ def fetch_github_stats(username: str) -> Optional[Dict]:
         
         return profile_data
         
-    except Exception as e:
-        print(f"Error fetching GitHub stats: {e}")
+    except requests.exceptions.Timeout:
+        logger.error("Github API request timed out")
+        return None
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Github API request failed: {e}")
         return None
 
 
@@ -146,17 +163,18 @@ def fetch_github_stats_detailed(username: str, github_token: Optional[str] = Non
             headers={
                 "Authorization": f"Bearer {github_token}",
                 "Content-Type": "application/json"
-            }
+            },
+            timeout=5
         )
         
         if response.status_code != 200:
-            print(f"GraphQL query failed: {response.status_code}")
+            logger.error(f"GraphQL query failed: {response.status_code}")
             return fetch_github_stats(username)  # Fallback to REST
         
         data = response.json()
         
         if 'errors' in data:
-            print(f"GraphQL errors: {data['errors']}")
+            logger.error(f"GraphQL errors: {data['errors']}")
             return fetch_github_stats(username)
         
         user = data['data']['user']
@@ -185,7 +203,7 @@ def fetch_github_stats_detailed(username: str, github_token: Optional[str] = Non
         }
         
     except Exception as e:
-        print(f"Error with GraphQL query: {e}")
+        logger.error(f"Error with GraphQL query: {e}")
         return fetch_github_stats(username)  # Fallback
 
 

@@ -60,3 +60,4 @@ desktop.ini
 .env.text
 .env.example
 .env.* 
+__pycache__

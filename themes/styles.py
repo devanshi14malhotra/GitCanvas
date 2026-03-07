@@ -80,7 +80,17 @@ THEMES = {
         "font_family": "'Courier New', monospace",
         "title_font_size": 18,
         "text_font_size": 14
-    }
+    },
+    "Matrix": {
+    "bg_color": "#000000",
+    "border_color": "#00ff00",
+    "title_color": "#00ff00",
+    "text_color": "#00ff88",
+    "icon_color": "#00ff00",
+    "font_family": "'Courier New', monospace",
+    "title_font_size": 18,
+    "text_font_size": 14
+}
 }
 import json
 import os
