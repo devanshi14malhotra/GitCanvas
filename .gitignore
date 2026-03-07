@@ -19,6 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.pyc
 
 # Virtual environments
 .env
@@ -60,4 +61,4 @@ desktop.ini
 .env.text
 .env.example
 .env.* 
-__pycache__
+__pycache__/
