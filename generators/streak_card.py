@@ -17,6 +17,17 @@ def draw_streak_card(data, theme_name="Default", custom_colors=None):
     
     dwg, theme = create_svg_base(theme_name, custom_colors, width, height, f"{data['username']}'s GitHub Streak")
     
+    # Add subtle rounded border
+    dwg.add(dwg.rect(insert=(5, 5), 
+                 size=(width-10, height-10),
+                 fill="none",
+                 stroke=theme.get("border_color", "#444"),
+                 stroke_width=2,
+                 rx=15,
+                 ry=15,
+                 opacity=0.4))
+
+    
     font_family = theme["font_family"]
     text_color = theme["text_color"]
     title_color = theme["title_color"]
@@ -40,12 +51,13 @@ def draw_streak_card(data, theme_name="Default", custom_colors=None):
     
     # Current Streak Label
     dwg.add(dwg.text("Current Streak", insert=(flame_x, flame_y + 45), 
-                     fill=text_color, font_size=12, font_family=font_family, 
-                     text_anchor="middle"))
+                 fill=text_color, font_size=13, font_family=font_family, 
+                 text_anchor="middle", opacity=0.85))
+
     
     # Current Streak Value
     dwg.add(dwg.text(f"{current_streak}", insert=(flame_x, flame_y - 35), 
-                     fill=title_color, font_size=32, font_family=font_family, 
+                     fill=title_color, font_size=38, font_family=font_family, 
                      text_anchor="middle", font_weight="bold"))
     
     # Current Streak Unit
@@ -88,12 +100,13 @@ def draw_streak_card(data, theme_name="Default", custom_colors=None):
     
     # Longest Streak Label
     dwg.add(dwg.text("Longest Streak", insert=(trophy_x, trophy_y + 45), 
-                     fill=text_color, font_size=12, font_family=font_family, 
-                     text_anchor="middle"))
+                 fill=text_color, font_size=13, font_family=font_family, 
+                 text_anchor="middle", opacity=0.85))
+
     
     # Longest Streak Value
     dwg.add(dwg.text(f"{longest_streak}", insert=(trophy_x, trophy_y - 35), 
-                     fill=title_color, font_size=32, font_family=font_family, 
+                     fill=title_color, font_size=38, font_family=font_family, 
                      text_anchor="middle", font_weight="bold"))
     
     # Longest Streak Unit
@@ -103,9 +116,9 @@ def draw_streak_card(data, theme_name="Default", custom_colors=None):
     
     # Center divider line
     dwg.add(dwg.line(start=(width/2, 70), end=(width/2, height - 20), 
-                     stroke=theme.get("border_color", "#333"), 
-                     stroke_width=1, opacity=0.3))
-    
+                 stroke=theme.get("border_color", "#333"), 
+                 stroke_width=2, opacity=0.5))
+
     # Total contributions info at bottom
     total_contributions = streak_data.get('total_contributions', 0)
     dwg.add(dwg.text(f"Total Contributions: {total_contributions}", 
