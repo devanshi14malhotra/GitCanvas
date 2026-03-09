@@ -975,6 +975,59 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
                         stroke_width=1,
                         opacity=opacity
                     ))
+
+    elif original_theme_name == "Matrix":
+
+        box_size = 6
+        gap = 3
+        start_x = 26
+        start_y = 70
+
+        cells = _weeks_to_cells(weeks, cols, rows, max_date)
+        max_count = max((cell["count"] for cell in cells if not cell["is_future"]), default=0)
+        positions = _grid_positions(cols, rows, start_x, start_y, box_size, gap)
+
+        _add_timeline_labels(dwg, weeks, cols, rows, start_x, start_y, box_size, gap, theme)
+
+        for idx, (x, y) in enumerate(positions):
+            cell = cells[idx] if idx < len(cells) else None
+
+            if not cell or cell.get("is_future"):
+                continue
+
+            count = cell.get("count", 0)
+
+            if count <= 0:
+                continue
+
+            intensity = count / max_count if max_count else 0
+
+            char = random.choice(["0", "1"])
+
+            text = dwg.text(
+                char,
+                insert=(x, y),
+                fill="#00ff41",
+                font_size=10 + intensity * 6,
+                font_family="monospace",
+                opacity=0.8
+            )
+
+            if animations_enabled:
+                dur = f"{random.uniform(2,6)}s"
+
+                text.add(
+                    dwg.animate(
+                        attributeName="y",
+                        from_="0",
+                        to=str(height),
+                        dur=dur,
+                        repeatCount="indefinite"
+                    )
+                )
+
+            dwg.add(text)
+
     else:
         # Default Grid (Github Style)
         # Just simple squares
