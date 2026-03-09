@@ -975,6 +975,13 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
                         stroke_width=1,
                         opacity=opacity
                     ))
+    elif original_theme_name == "Matrix":
+        import random
+        from themes import matrix
+
+        svg = matrix.render(data, theme)
+        return svg
+    
     else:
         # Default Grid (Github Style)
         # Just simple squares
