@@ -3,18 +3,6 @@ import svgwrite
 
 
 def render(data, theme, width=600, height=200):
-    """
-    Render Matrix-style digital rain visualization for contributions.
-
-    Args:
-        data (dict): Contribution data
-        theme (dict): Theme configuration
-        width (int): SVG width
-        height (int): SVG height
-
-    Returns:
-        str: SVG string
-    """
 
     dwg = svgwrite.Drawing(size=(width, height))
 
@@ -30,49 +18,41 @@ def render(data, theme, width=600, height=200):
     contributions = data.get("contributions", [])
 
     if not contributions:
-        return dwg.tostring()
+        # fallback rain if data missing
+        contributions = [{"count": random.randint(0, 5)} for _ in range(60)]
 
-    max_cols = 60
-    cols = min(len(contributions), max_cols)
-
+    cols = min(len(contributions), 60)
     col_width = width / cols
 
     for i in range(cols):
 
-        contrib = contributions[i]
-        count = contrib.get("count", 0)
+        count = contributions[i].get("count", 0)
 
-        if count <= 0:
-            continue
+        # contribution affects rain density
+        rain_length = max(4, min(12, count + 4))
 
-        # Horizontal position
-        x = (i * col_width) + (col_width / 2)
+        x = (i * col_width) + col_width / 2
 
-        # Determine rain length based on contribution intensity
-        rain_length = max(3, min(10, count))
-
-        # Random animation speed
         dur = f"{random.uniform(3,7)}s"
 
         for j in range(rain_length):
 
-            # Random matrix character
             char = random.choice(["0", "1"])
 
-            # Slight vertical offset for trail effect
             y_offset = -j * 12
+
+            opacity = max(0.2, 1 - j * 0.12)
 
             text = dwg.text(
                 char,
                 insert=(x, y_offset),
                 fill=theme.get("icon_color", "#00ff41"),
-                font_size=12,
+                font_size=14,
                 font_family="monospace",
                 text_anchor="middle",
-                opacity=max(0.2, 1 - (j * 0.15))
+                opacity=opacity
             )
 
-            # Animate falling effect
             text.add(
                 dwg.animate(
                     attributeName="y",
