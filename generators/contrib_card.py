@@ -344,46 +344,90 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         dwg.add(dwg.line(start=(ship_x, ship_y), end=(width, ship_y), stroke="#00a8ff", stroke_width=2, stroke_dasharray="4,2"))
 
     elif original_theme_name == "Marvel":
-        # Infinity Stones
-        stones = ["#FFD700", "#FF0000", "#0000FF", "#800080", "#008000", "#FFA500"] # Mind, Reality, Space, Power, Time, Soul
-
-        # Draw slots
-        cx = width / 2
-        cy = height / 2 + 10
+        # Marvel Infinity Stones Theme with ACTUAL contribution data
+        # Each contribution cell is represented as an Infinity Stone with intensity-based glow
         
-        counts = [cell["count"] for cell in _weeks_to_cells(weeks, cols, rows, max_date) if not cell["is_future"]]
-        if counts:
-            bucket_size = max(1, len(counts) // len(stones))
-        else:
-            bucket_size = 1
-
-        bucket_values = []
-        for i in range(len(stones)):
-            start = i * bucket_size
-            end = start + bucket_size
-            values = counts[start:end] if counts else []
-            avg = sum(values) / len(values) if values else 0
-            bucket_values.append(avg)
-
-        max_bucket = max(bucket_values) if bucket_values else 0
-
-        # Gauntlet hints? Or just the stones glowing
-        for i, color in enumerate(stones):
-            sx = 60 + i * 60
-            sy = cy
-            intensity = 0 if max_bucket == 0 else bucket_values[i] / max_bucket
-            glow = 8 + (intensity * 14)
-            stone_r = 6 + (intensity * 6)
+        box_size = 7
+        gap = 2
+        start_x = 26
+        start_y = 72
+        
+        # Get actual contribution data
+        cells = _weeks_to_cells(weeks, cols, rows, max_date)
+        max_count = max((cell["count"] for cell in cells if not cell["is_future"]), default=0)
+        levels = _levels_from_cells(cells, max_count)
+        positions = _grid_positions(cols, rows, start_x, start_y, box_size, gap)
+        
+        _add_timeline_labels(dwg, weeks, cols, rows, start_x, start_y, box_size, gap, theme)
+        
+        # Infinity Stone colors (cycle through them for visual variety)
+        stone_colors = [
+            "#FFD700",  # Mind Stone (Yellow)
+            "#FF0000",  # Reality Stone (Red)
+            "#0099FF",  # Space Stone (Blue)
+            "#9D00FF",  # Power Stone (Purple)
+            "#00FF88",  # Time Stone (Green)
+            "#FF6B35"   # Soul Stone (Orange)
+        ]
+        
+        # Draw contribution grid as Infinity Stones
+        for idx, (x, y) in enumerate(positions):
+            level = levels[idx]
+            if level is None:
+                continue
             
-            # Glow
-            dwg.add(dwg.circle(center=(sx, sy), r=glow, fill=color, opacity=0.25 + (intensity * 0.35)))
-            # Stone
-            dwg.add(dwg.circle(center=(sx, sy), r=stone_r, fill=color, stroke="white", stroke_width=1))
+            # Cycle through stone colors based on column for cleaner pattern
+            col = idx // rows
+            stone_color = stone_colors[col % len(stone_colors)]
+            center_x = x + box_size // 2
+            center_y = y + box_size // 2
             
-            # Label below
-            dwg.add(dwg.text(f"Stone {i+1}", insert=(sx, sy+30), fill="white", font_size=10, text_anchor="middle"))
+            if level == 0:
+                # No contributions - very subtle stone
+                dwg.add(dwg.circle(center=(center_x, center_y), r=2, 
+                                 fill=stone_color, opacity=0.1))
+            else:
+                # Contributions present - glowing stone based on intensity
+                # More refined glow scaling
+                glow_radius = 2.5 + (level * 1.2)
+                stone_radius = 2 + (level * 0.6)
+                glow_opacity = 0.15 + (level * 0.12)
+                stone_opacity = 0.65 + (level * 0.08)
+                
+                # Outer glow
+                dwg.add(dwg.circle(center=(center_x, center_y), r=glow_radius, 
+                                 fill=stone_color, opacity=glow_opacity))
+                
+                # Inner stone with subtle border
+                dwg.add(dwg.circle(center=(center_x, center_y), r=stone_radius, 
+                                 fill=stone_color, opacity=stone_opacity, 
+                                 stroke="white", stroke_width=0.2))
+                
+                # Extra glow for highest activity (level 4) - more subtle
+                if level == 4:
+                    dwg.add(dwg.circle(center=(center_x, center_y), r=glow_radius + 1.5, 
+                                     fill=stone_color, opacity=0.1))
+        
+        # Subtle legend at bottom
+        legend_y = height - 15
+        legend_start_x = 30
+        
+        dwg.add(dwg.text("Less", insert=(legend_start_x, legend_y), 
+                        fill=theme["text_color"], font_size=9, 
+                        font_family=theme["font_family"], opacity=0.6))
+        
+        # Legend stones
+        for i in range(5):
+            lx = legend_start_x + 30 + (i * 12)
+            level_opacity = 0.1 + (i * 0.2)
+            level_size = 2 + (i * 0.5)
+            dwg.add(dwg.circle(center=(lx, legend_y - 3), r=level_size, 
+                             fill=stone_colors[0], opacity=level_opacity))
+        
+        dwg.add(dwg.text("More", insert=(legend_start_x + 90, legend_y), 
+                        fill=theme["text_color"], font_size=9, 
+                        font_family=theme["font_family"], opacity=0.6))
 
-        dwg.add(dwg.text("SNAP!", insert=(width-80, cy), fill=theme["title_color"], font_size=24, font_weight="bold", font_family="Impact"))
     elif original_theme_name == "Stranger_things":
         # Upside Down with demogorgon
         # Floating particles

@@ -229,8 +229,8 @@ def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hid
 
         # --- PNG & JPEG Download via browser Canvas (no system dependencies) ---
         svg_b64 = base64.b64encode(svg_bytes.encode("utf-8")).decode("utf-8")
-        # Sanitize filename to prevent XSS injection
         filename_prefix_safe = json.dumps(f"{endpoint}_{username}")
+
         components.html(f"""
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
             <button onclick="downloadSVGAs('png')" style="
@@ -246,6 +246,7 @@ def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hid
                 ⬇️ Download JPEG
             </button>
         </div>
+
         <script>
         function downloadSVGAs(format) {{
             const svgText = atob('{svg_b64}');
@@ -253,43 +254,46 @@ def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hid
             const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
             const svgEl = svgDoc.documentElement;
 
-            // Get dimensions from width/height or viewBox
-            let w = parseInt(svgEl.getAttribute('width')) || 0;
-            let h = parseInt(svgEl.getAttribute('height')) || 0;
-            if (!w || !h) {{
-                const vb = svgEl.getAttribute('viewBox');
-                if (vb) {{
-                    const parts = vb.split(/[\s,]+/);
-                    w = parseFloat(parts[2]) || 800;
-                    h = parseFloat(parts[3]) || 400;
-                }} else {{
-                    w = 800; h = 400;
-                }}
+            const vb = svgEl.getAttribute('viewBox');
+            let w = 800, h = 400;
+            if (vb) {{
+                const parts = vb.split(/[\s,]+/);
+                w = parseFloat(parts[2]) || 800;
+                h = parseFloat(parts[3]) || 400;
             }}
 
             const blob = new Blob([svgText], {{type: 'image/svg+xml'}});
             const url = URL.createObjectURL(blob);
             const img = new Image();
             img.onload = function() {{
+                const SCALE = 4;
+
                 const canvas = document.createElement('canvas');
-                canvas.width = w;
-                canvas.height = h;
+                canvas.width = w * SCALE;
+                canvas.height = h * SCALE;
                 const ctx = canvas.getContext('2d');
+
+                // Optional: fill white background for JPEG
                 if (format === 'jpeg') {{
                     ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, w, h);
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }}
-                ctx.drawImage(img, 0, 0, w, h);
-                const link = document.createElement('a');
-                link.download = {filename_prefix_safe} + '.' + (format === 'jpeg' ? 'jpg' : 'png');
-                link.href = canvas.toDataURL('image/' + format, 0.95);
-                link.click();
-                URL.revokeObjectURL(url);
+
+                // Draw image preserving aspect ratio
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(function(blob) {{
+                    const link = document.createElement('a');
+                    link.download = {filename_prefix_safe} + (format === 'jpeg' ? '.jpeg' : '.png');
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    URL.revokeObjectURL(url);
+                }}, 'image/' + format, 1.0);
             }};
             img.src = url;
         }}
         </script>
-        """, height=100)
+        """, height=150)
 
     with col2:
         st.subheader("Integration")

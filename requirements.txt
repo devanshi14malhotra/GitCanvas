@@ -7,3 +7,5 @@ python-dotenv
 google-generativeai
 openai
 cairosvg==2.7.1
+cachetools
+pydantic>=2.0.0

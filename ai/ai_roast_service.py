@@ -15,6 +15,10 @@ except Exception:
     _HAS_GENAI = False
 from openai import OpenAI
 
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
+
 # Get API keys from environment
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
@@ -25,9 +29,9 @@ if GEMINI_API_KEY:
         try:
             genai.configure(api_key=GEMINI_API_KEY)
         except Exception as e:
-            print(f"Failed to configure Google Generative AI client: {e}")
+            logger.error(f"Failed to configure Google Generative AI client: {e}")
     else:
-        print("Google Generative AI client not installed; Gemini support disabled.")
+        logger.warning("Google Generative AI client not installed; Gemini support disabled.")
 
 if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
@@ -91,7 +95,7 @@ def generate_roast_with_openai(profile_data: Dict) -> str:
         return roast
         
     except Exception as e:
-        print(f"OpenAI API error: {e}")
+        logger.error(f"OpenAI API error: {e}")
         raise
 
 
@@ -123,7 +127,7 @@ def generate_roast_with_gemini(profile_data: Dict) -> str:
         return roast
         
     except Exception as e:
-        print(f"Gemini API error: {e}")
+        logger.error(f"Gemini API error: {e}")
         raise
 
 
@@ -164,7 +168,7 @@ def generate_profile_roast(profile_data: Dict) -> Dict:
             roast_text = generate_roast_with_openai(profile_data)
             source = "openai"
         except Exception as e:
-            print(f"OpenAI failed: {e}")
+            logger.warning(f"OpenAI failed: {e}")
     
     # Try Gemini if OpenAI failed or not available
     if not roast_text and GEMINI_API_KEY:
@@ -172,7 +176,7 @@ def generate_profile_roast(profile_data: Dict) -> Dict:
             roast_text = generate_roast_with_gemini(profile_data)
             source = "gemini"
         except Exception as e:
-            print(f"Gemini failed: {e}")
+            logger.warning(f"Gemini failed: {e}")
     
     # Use fallback if all AI services failed
     if not roast_text:

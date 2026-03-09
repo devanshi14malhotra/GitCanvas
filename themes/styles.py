@@ -143,5 +143,17 @@ THEMES["Ocean"] = {
     "text_font_size": 14
 }
 
+# Manually add Retro theme (Beige background, typewriter font, "old paper" look)
+THEMES["Retro"] = {
+    "bg_color": "#f5f0e1",
+    "border_color": "#8b7355",
+    "title_color": "#5c4a32",
+    "text_color": "#6b5b45",
+    "icon_color": "#a08060",
+    "font_family": "'Courier New', Courier, monospace",
+    "title_font_size": 18,
+    "text_font_size": 14
+}
+
 # Load custom themes on module import
 CUSTOM_THEMES = load_custom_themes()

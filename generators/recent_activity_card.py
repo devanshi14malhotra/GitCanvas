@@ -1,6 +1,10 @@
 import svgwrite
 import requests
 from themes.styles import THEMES
+from utils.api_validators import validate_github_events_response
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def draw_recent_activity_card(data, theme_name="Default", custom_colors=None, token=None):
@@ -39,25 +43,38 @@ def draw_recent_activity_card(data, theme_name="Default", custom_colors=None, to
     url = f"https://api.github.com/users/{username}/events"
     try:
         resp = requests.get(url, headers=headers, timeout=8)
-    except Exception as e:
+    except requests.RequestException as e:
         # Return an SVG with the error
+        logger.error(f"Failed to fetch events: {e}")
         return _render_svg_lines([f"Error fetching events: {e}"], theme)
 
     if resp.status_code != 200:
+        logger.error(f"GitHub API error: {resp.status_code}")
         return _render_svg_lines([f"GitHub API error: {resp.status_code}"], theme)
 
-    events = resp.json()
+    try:
+        raw_events = resp.json()
+    except ValueError as e:
+        logger.error(f"Invalid JSON in events response: {e}")
+        return _render_svg_lines(["Error: Invalid response format"], theme)
+
+    # Validate events data
+    validated_events = validate_github_events_response(raw_events)
+    if not validated_events:
+        logger.warning("No valid events found")
+        return _render_svg_lines(["No recent activity found"], theme)
 
     lines = []
-    for ev in events:
-        if ev.get('type') == 'PullRequestEvent':
-            payload = ev.get('payload', {})
-            action = payload.get('action')
+    for ev in validated_events:
+        if ev.type == 'PullRequestEvent':
+            payload = ev.payload or {}
+            action = payload.get('action', '')
             pr = payload.get('pull_request', {})
-            number = pr.get('number')
-            title = pr.get('title') or ''
-            repo = ev.get('repo', {}).get('name', '')
-            merged = pr.get('merged')
+            number = pr.get('number', 0)
+            title = pr.get('title', '')[:100]  # Truncate long titles
+            repo_data = ev.repo or {}
+            repo = repo_data.get('name', '')[:50]  # Truncate long repo names
+            merged = pr.get('merged', False)
 
             if merged:
                 lines.append(f"Merged PR #{number} in {repo}: {title}")
@@ -69,13 +86,14 @@ def draw_recent_activity_card(data, theme_name="Default", custom_colors=None, to
                 else:
                     lines.append(f"PR #{number} {action} in {repo}: {title}")
 
-        elif ev.get('type') == 'IssuesEvent':
-            payload = ev.get('payload', {})
-            action = payload.get('action')
+        elif ev.type == 'IssuesEvent':
+            payload = ev.payload or {}
+            action = payload.get('action', '')
             issue = payload.get('issue', {})
-            number = issue.get('number')
-            title = issue.get('title') or ''
-            repo = ev.get('repo', {}).get('name', '')
+            number = issue.get('number', 0)
+            title = issue.get('title', '')[:100]  # Truncate long titles
+            repo_data = ev.repo or {}
+            repo = repo_data.get('name', '')[:50]  # Truncate long repo names
 
             if action == 'opened':
                 lines.append(f"Opened Issue #{number} in {repo}: {title}")
