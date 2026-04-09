@@ -205,7 +205,7 @@ if custom_colors:
 
 
 # --- Layout: Tabs ---
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs(["Main Stats", "Languages", "Top Repositories", "Contributions", "🔥 GitHub Streak", "🔗 Social Links", "Icons & Badges", "🔥 AI Roast", "Recent Activity", "✨ Visual Elements", "🏆 Trophy"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs(["Main Stats", "Languages", "Top Repositories", "Contributions", "🔥 GitHub Streak", "🔗 Social Links", "Icons & Badges", "🔥 AI Roast", "Recent Activity", "✨ Visual Elements", "🏆 Trophy", "📝 Gists"])
 
 def show_code_area(code_content, label="Markdown Code"):
     st.markdown(f"**{label}** (Copy below)")
@@ -662,3 +662,91 @@ with tab11:
     
     svg_bytes = trophy_card.draw_trophy_card(trophy_data, selected_theme, custom_colors)
     render_tab(svg_bytes, "trophy", username, selected_theme, custom_colors, code_template="![GitHub Trophy]({url})", output_format=output_format)
+
+# TAB 12: Gists
+with tab12:
+    st.subheader("📝 GitHub Gists")
+    st.markdown("Display and embed your GitHub Gists as beautiful SVG cards.")
+    
+    # Fetch user's gists
+    with st.spinner("Loading gists..."):
+        from utils import github_api
+        user_gists = github_api.fetch_user_gists(username, github_token if github_token else None)
+    
+    if not user_gists:
+        st.info("👆 No public gists found for this user. Create some gists on GitHub to see them here!")
+    else:
+        # Create selection options with filename and description
+        gist_options = {}
+        for gist in user_gists:
+            gist_id = gist.get("gist_id", "")
+            filename = gist.get("filename", "unnamed")
+            description = gist.get("description", "")
+            
+            # Create display label
+            if description:
+                label = f"{filename} - {description[:40]}{'...' if len(description) > 40 else ''}"
+            else:
+                label = filename
+            gist_options[label] = gist
+        
+        # Selectbox for gist selection
+        selected_label = st.selectbox(
+            "Select a Gist to preview:",
+            options=list(gist_options.keys()),
+            help="Choose which gist to display"
+        )
+        
+        selected_gist = gist_options[selected_label]
+        gist_id = selected_gist.get("gist_id", "")
+        
+        # Generate preview
+        col1, col2 = st.columns([1.5, 1])
+        
+        with col1:
+            st.markdown("#### Preview")
+            font_for_draw = selected_font if selected_font != "Default" else None
+            svg_bytes = gist_card.draw_gist_card(
+                selected_gist,
+                theme_name=selected_theme,
+                font_family=font_for_draw
+            )
+            b64 = base64.b64encode(svg_bytes.encode('utf-8')).decode("utf-8")
+            st.markdown(f'<img src="data:image/svg+xml;base64,{b64}" style="max-width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-radius: 10px;"/>', unsafe_allow_html=True)
+            
+            # SVG Download
+            st.download_button(
+                label="⬇️ Download SVG",
+                data=svg_bytes.encode("utf-8"),
+                file_name=f"gist_{gist_id}.svg",
+                mime="image/svg+xml",
+                use_container_width=True
+            )
+        
+        with col2:
+            st.markdown("#### Integration")
+            
+            # Build API URL
+            params = []
+            if selected_theme != "Default":
+                params.append(f"theme={selected_theme}")
+            if selected_font and selected_font != "Default":
+                params.append(f"font={selected_font}")
+            
+            query_str = "&".join(params)
+            if query_str:
+                query_str = "?" + query_str + "&"
+            else:
+                query_str = "?"
+            
+            api_url = f"https://gitcanvas-api.vercel.app/api/gist{query_str}username={username}&gist_id={gist_id}"
+            gist_url = f"https://gist.github.com/{username}/{gist_id}"
+            
+            # Generate code based on output format
+            if output_format == "HTML":
+                code = f'<a href="{gist_url}"><img src="{api_url}" alt="Gist Card"/></a>'
+            else:
+                code = f"[![Gist Card]({api_url})]({gist_url})"
+            
+            code_label = "HTML Code" if output_format == "HTML" else "Markdown Code"
+            show_code_area(code, label=code_label)
