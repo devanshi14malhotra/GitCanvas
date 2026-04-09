@@ -155,7 +155,11 @@ with st.sidebar:
                 st.error("Please enter a theme name")
 
     github_token = st.text_input("GitHub Token (enter your token to view actual data)", type="password", help="Enter your GitHub token to fetch contribution data")
-    
+
+    # Font selector
+    font_options = ['Default', 'Inter', 'Roboto', 'Fira Code', 'Courier New', 'Comic Sans MS']
+    selected_font = st.selectbox("Custom Font", font_options, help="Choose a custom font for your SVG cards (uses theme default if 'Default' selected)")
+
     # Animation toggle
     animations_enabled = st.checkbox("Enable Animations", value=False, help="Enable SVG animations for cards that support it")
     
@@ -211,7 +215,7 @@ def show_code_area(code_content, label="Markdown Code"):
     st.markdown(f"**{label}** (Copy below)")
     st.text_area(label, value=code_content, height=100, label_visibility="collapsed")
 
-def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hide_params=None, code_template=None, excluded_languages=None, output_format="Markdown"):
+def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hide_params=None, code_template=None, excluded_languages=None, output_format="Markdown", selected_font="Default"):
     col1, col2 = st.columns([1.5, 1])
     with col1:
         # Render SVG
@@ -314,6 +318,10 @@ def render_tab(svg_bytes, endpoint, username, selected_theme, custom_colors, hid
             # Remove spaces and add to params
             params.append(f"exclude={excluded_languages.replace(' ', '')}")
 
+        # Add font parameter if custom font selected
+        if selected_font and selected_font != "Default":
+            params.append(f"font={selected_font}")
+
         query_str = "&".join(params)
         if query_str:
             query_str = "?" + query_str
@@ -356,8 +364,9 @@ with tab1:
     show_ops = {"stars": show_stars, "commits": show_commits, "repos": show_repos, "followers": show_followers}
 
     # Pass selected_theme string to support theme-specific logic (e.g. Glass)
-    svg_bytes = stats_card.draw_stats_card(data, selected_theme, show_ops, custom_colors, animations_enabled)
-    render_tab(svg_bytes, "stats", username, selected_theme, custom_colors, hide_params=show_ops, code_template=f"[![{username}'s Stats]({{url}})](https://github.com/{{username}})", output_format=output_format)
+    font_for_draw = selected_font if selected_font != "Default" else None
+    svg_bytes = stats_card.draw_stats_card(data, selected_theme, show_ops, custom_colors, animations_enabled, font_family=font_for_draw)
+    render_tab(svg_bytes, "stats", username, selected_theme, custom_colors, hide_params=show_ops, code_template=f"[![{username}'s Stats]({{url}})](https://github.com/{{username}})", output_format=output_format, selected_font=selected_font)
 
 with tab2:
     st.subheader("Top Languages")
@@ -378,8 +387,9 @@ with tab2:
     excluded_languages_str = ",".join(excluded_languages) if excluded_languages else None
     
     # Generate card with exclusions - Pass selected_theme string
-    svg_bytes = lang_card.draw_lang_card(data, selected_theme, custom_colors, excluded_languages=excluded_languages)
-    render_tab(svg_bytes, "languages", username, selected_theme, custom_colors, code_template="![Top Langs]({url})", excluded_languages=excluded_languages_str, output_format=output_format)
+    font_for_draw = selected_font if selected_font != "Default" else None
+    svg_bytes = lang_card.draw_lang_card(data, selected_theme, custom_colors, excluded_languages=excluded_languages, font_family=font_for_draw)
+    render_tab(svg_bytes, "languages", username, selected_theme, custom_colors, code_template="![Top Langs]({url})", excluded_languages=excluded_languages_str, output_format=output_format, selected_font=selected_font)
 
 with tab3:
     st.subheader("Top Repositories")
@@ -400,8 +410,9 @@ with tab3:
         filtered_data["top_repos"] = [r for r in filtered_data["top_repos"] if not r.get("is_fork", False)]
     
     # Generate card - Pass selected_theme string
-    svg_bytes = repo_card.draw_repo_card(filtered_data, selected_theme, custom_colors, sort_by=sort_by, limit=repo_limit)
-    render_tab(svg_bytes, "repos", username, selected_theme, custom_colors, code_template="![Top Repos]({url})", output_format=output_format)
+    font_for_draw = selected_font if selected_font != "Default" else None
+    svg_bytes = repo_card.draw_repo_card(filtered_data, selected_theme, custom_colors, sort_by=sort_by, limit=repo_limit, font_family=font_for_draw)
+    render_tab(svg_bytes, "repos", username, selected_theme, custom_colors, code_template="![Top Repos]({url})", output_format=output_format, selected_font=selected_font)
 
 with tab4:
     st.subheader("Contribution Graph")
@@ -449,15 +460,17 @@ with tab4:
     # All Time returns None, showing all contributions
 
     # Pass selected_theme string and date_range
-    svg_bytes = contrib_card.draw_contrib_card(data, selected_theme, custom_colors, date_range=date_range, animations_enabled=animations_enabled)
-    render_tab(svg_bytes, "contributions", username, selected_theme, custom_colors, code_template="![Contributions]({url})", output_format=output_format)
+    font_for_draw = selected_font if selected_font != "Default" else None
+    svg_bytes = contrib_card.draw_contrib_card(data, selected_theme, custom_colors, date_range=date_range, animations_enabled=animations_enabled, font_family=font_for_draw)
+    render_tab(svg_bytes, "contributions", username, selected_theme, custom_colors, code_template="![Contributions]({url})", output_format=output_format, selected_font=selected_font)
 
 with tab5:
     st.subheader("GitHub Streak")
     st.caption("🔥 Track your contribution streaks! Shows current consecutive days and your all-time longest streak.")
     
-    svg_bytes = streak_card.draw_streak_card(data, selected_theme, custom_colors)
-    render_tab(svg_bytes, "streak", username, selected_theme, custom_colors, code_template="![GitHub Streak]({url})", output_format=output_format)
+    font_for_draw = selected_font if selected_font != "Default" else None
+    svg_bytes = streak_card.draw_streak_card(data, selected_theme, custom_colors, font_family=font_for_draw)
+    render_tab(svg_bytes, "streak", username, selected_theme, custom_colors, code_template="![GitHub Streak]({url})", output_format=output_format, selected_font=selected_font)
 
 with tab6:
     st.subheader("🔗 Social Links")
@@ -609,6 +622,8 @@ with tab9:
             params.append(f"{k}={v.replace('#', '')}")
         if github_token:
             params.append(f"token={github_token}")
+        if selected_font and selected_font != "Default":
+            params.append(f"font={selected_font}")
 
         query_str = "&".join(params)
         if query_str: query_str = "?" + query_str
@@ -660,5 +675,6 @@ with tab11:
         # Add a default for testing
         trophy_data["created_at"] = "2010-01-01T00:00:00Z"
     
-    svg_bytes = trophy_card.draw_trophy_card(trophy_data, selected_theme, custom_colors)
-    render_tab(svg_bytes, "trophy", username, selected_theme, custom_colors, code_template="![GitHub Trophy]({url})", output_format=output_format)
+    font_for_draw = selected_font if selected_font != "Default" else None
+    svg_bytes = trophy_card.draw_trophy_card(trophy_data, selected_theme, custom_colors, font_family=font_for_draw)
+    render_tab(svg_bytes, "trophy", username, selected_theme, custom_colors, code_template="![GitHub Trophy]({url})", output_format=output_format, selected_font=selected_font)
