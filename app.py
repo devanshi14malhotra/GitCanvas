@@ -63,8 +63,23 @@ with st.sidebar:
     
     # Form to debounce username input and prevent API calls on every keystroke
     with st.form(key='user_input_form'):
-        username = st.text_input("GitHub Username", value="torvalds")
+        username_input = st.text_input("GitHub Username", value="torvalds")
         submit_button = st.form_submit_button(label='Fetch Stats')
+    
+    # Initialize session state for username if not exists
+    if "username" not in st.session_state:
+        st.session_state.username = username_input
+    
+    # Handle form submission
+    if submit_button:
+        if not username_input or not username_input.strip():
+            st.warning("Please enter a GitHub username")
+        else:
+            st.session_state.username = username_input.strip()
+            st.rerun()
+    
+    # Use the username from session state
+    username = st.session_state.username
     
     st.header("2. Global Style")
     
@@ -182,7 +197,11 @@ def load_data(user, token=None, _cache_version="v2"):  # Added version to force 
         d = github_api.get_mock_data(user)
     return d
 
-data = load_data(username if username else "torvalds", github_token if github_token else None)
+# Only load data if we have a valid username in session state
+if st.session_state.get("username"):
+    data = load_data(st.session_state.username, github_token if github_token else None)
+else:
+    data = None
 
 # Ensure data is not None
 if data is None:
