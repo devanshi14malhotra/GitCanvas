@@ -74,7 +74,70 @@ with st.sidebar:
     # Combine with custom themes at the end
     theme_options = predefined_themes + custom_theme_names
     
-    selected_theme = st.selectbox("Select Theme", theme_options)
+    # Initialize session state for selected theme if not exists
+    if "selected_theme" not in st.session_state:
+        st.session_state.selected_theme = theme_options[0] if theme_options else "Default"
+    
+    # Theme Gallery Section
+    with st.expander("🖼️ Theme Gallery", expanded=False):
+        st.caption("Click on a theme to select it")
+        
+        # Generate theme previews
+        theme_previews = generate_theme_previews()
+        
+        # Create a 3-column grid layout
+        cols_per_row = 3
+        theme_names = list(theme_previews.keys())
+        
+        # Display themes in rows of 3 columns
+        for i in range(0, len(theme_names), cols_per_row):
+            cols = st.columns(cols_per_row)
+            for j, col in enumerate(cols):
+                idx = i + j
+                if idx < len(theme_names):
+                    theme_name = theme_names[idx]
+                    with col:
+                        # Check if this theme is currently selected
+                        is_selected = st.session_state.selected_theme == theme_name
+                        
+                        # Add highlight styling for selected theme
+                        if is_selected:
+                            st.markdown("""
+                            <div style="border: 2px solid #58a6ff; border-radius: 8px; padding: 4px;">
+                            """, unsafe_allow_html=True)
+                        
+                        # Display theme name as caption
+                        st.caption(f"**{theme_name}**")
+                        
+                        # Render SVG preview (convert to base64)
+                        svg_content = theme_previews[theme_name]
+                        if svg_content and not svg_content.startswith("<!-- Error"):
+                            b64 = base64.b64encode(svg_content.encode('utf-8')).decode("utf-8")
+                            st.image(f"data:image/svg+xml;base64,{b64}", use_container_width=True)
+                        else:
+                            st.error(f"Preview unavailable")
+                        
+                        # Add select button for this theme
+                        btn_label = "✓ Selected" if is_selected else f"Select {theme_name}"
+                        if st.button(btn_label, key=f"select_{theme_name}_gallery_btn", use_container_width=True, disabled=is_selected):
+                            st.session_state.selected_theme = theme_name
+                            st.experimental_rerun()
+                        
+                        # Close the highlight div if selected
+                        if is_selected:
+                            st.markdown("</div>", unsafe_allow_html=True)
+    
+    def on_theme_change():
+        """Callback to sync selectbox changes to session state"""
+        st.session_state.selected_theme = st.session_state.theme_selectbox
+    
+    selected_theme = st.selectbox(
+        "Select Theme", 
+        theme_options, 
+        index=theme_options.index(st.session_state.selected_theme) if st.session_state.selected_theme in theme_options else 0,
+        key="theme_selectbox",
+        on_change=on_theme_change
+    )
     
     # Customization Expander
     # Ensure custom_colors exists even if the expander isn't opened
@@ -168,6 +231,43 @@ with st.sidebar:
         st.rerun()
         
     st.info("💡 Tip: Use the 'Icons & Badges' tab to add your tech stack icons!")
+
+# Theme Gallery Preview Generation
+@st.cache_data(ttl=3600)
+def generate_theme_previews():
+    """
+    Generate sample SVGs for all available themes using dummy data.
+    Returns a dictionary mapping theme names to their generated SVGs.
+    """
+    # Static dummy data for consistent previews
+    dummy_data = {
+        "username": "Preview",
+        "total_stars": 142,
+        "total_commits": 1234,
+        "public_repos": 42,
+        "followers": 89,
+        "top_languages": [("Python", 50), ("JavaScript", 30), ("TypeScript", 20)]
+    }
+    
+    previews = {}
+    all_themes = get_all_themes()
+    
+    for theme_name in all_themes.keys():
+        try:
+            # Generate a simple stats card preview for each theme
+            svg_bytes = stats_card.draw_stats_card(
+                dummy_data, 
+                theme_name, 
+                show_options={"stars": True, "commits": True, "repos": True, "followers": True},
+                custom_colors=None,
+                animations_enabled=False
+            )
+            previews[theme_name] = svg_bytes
+        except Exception as e:
+            # Fallback for themes that might fail
+            previews[theme_name] = f"<!-- Error generating preview for {theme_name}: {e} -->"
+    
+    return previews
 
 # Data Loading
 @st.cache_data(ttl=3600)  # Cache for 1 hour
