@@ -199,7 +199,12 @@ def load_data(user, token=None, _cache_version="v2"):  # Added version to force 
 
 # Only load data if we have a valid username in session state
 if st.session_state.get("username"):
-    data = load_data(st.session_state.username, github_token if github_token else None)
+    try:
+        with st.spinner(f'Fetching GitHub data for {st.session_state.username}...'):
+            data = load_data(st.session_state.username, github_token if github_token else None)
+    except Exception as e:
+        st.error(f"Failed to fetch data: {e}")
+        data = None
 else:
     data = None
 
