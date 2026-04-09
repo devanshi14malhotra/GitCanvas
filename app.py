@@ -60,7 +60,11 @@ st.markdown("### Design your GitHub Stats. Copy the Code. Done.")
 # --- Sidebar Controls ---
 with st.sidebar:
     st.header("1. Identify")
-    username = st.text_input("GitHub Username", value="torvalds")
+    
+    # Form to debounce username input and prevent API calls on every keystroke
+    with st.form(key='user_input_form'):
+        username = st.text_input("GitHub Username", value="torvalds")
+        submit_button = st.form_submit_button(label='Fetch Stats')
     
     st.header("2. Global Style")
     
