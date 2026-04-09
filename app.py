@@ -9,7 +9,8 @@ HEX_COLOR_REGEX = re.compile(r'^#[0-9A-Fa-f]{6}$')
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
 from roast_widget_streamlit import render_roast_widget
-from generators import stats_card, lang_card, contrib_card, badge_generator, recent_activity_card, streak_card, repo_card, social_card, trophy_card
+from ai.compliment_generator import generate_github_compliment
+from generators import stats_card, lang_card, contrib_card, badge_generator, recent_activity_card, streak_card, repo_card, social_card, trophy_card, gist_card
 from utils import github_api
 from themes.styles import THEMES, get_all_themes, CUSTOM_THEMES
 from generators.visual_elements import (
@@ -205,7 +206,7 @@ if custom_colors:
 
 
 # --- Layout: Tabs ---
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs(["Main Stats", "Languages", "Top Repositories", "Contributions", "🔥 GitHub Streak", "🔗 Social Links", "Icons & Badges", "🔥 AI Roast", "Recent Activity", "✨ Visual Elements", "🏆 Trophy"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs(["Main Stats", "Languages", "Top Repositories", "Contributions", "🔥 GitHub Streak", "🔗 Social Links", "Icons & Badges", "🔥 AI Roast", "💖 AI Compliment", "Recent Activity", "✨ Visual Elements", "🏆 Trophy"])
 
 def show_code_area(code_content, label="Markdown Code"):
     st.markdown(f"**{label}** (Copy below)")
@@ -585,6 +586,174 @@ with tab8:
         st.warning("Please enter a GitHub username in the sidebar.")
 
 with tab9:
+    st.subheader("💖 AI Profile Compliment")
+    st.markdown("Let AI hype up your GitHub profile with positivity and encouragement!")
+    
+    # Custom CSS for the compliment widget
+    st.markdown("""
+    <style>
+    .compliment-widget {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border-radius: 16px;
+        padding: 24px;
+        color: white;
+        margin: 20px 0;
+    }
+    .compliment-header {
+        text-align: center;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    .compliment-subtitle {
+        text-align: center;
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 20px;
+    }
+    .compliment-text {
+        background: rgba(255, 255, 255, 0.2);
+        border-left: 4px solid #ffd700;
+        border-radius: 8px;
+        padding: 20px;
+        font-size: 20px;
+        font-weight: 500;
+        font-style: italic;
+        margin: 20px 0;
+        text-align: center;
+        color: white;
+    }
+    .compliment-stats {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .stat {
+        text-align: center;
+    }
+    .stat-label {
+        font-size: 12px;
+        opacity: 0.8;
+        text-transform: uppercase;
+    }
+    .stat-value {
+        font-size: 16px;
+        font-weight: 700;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    if username:
+        # Initialize session state for compliment
+        if 'compliment_data' not in st.session_state:
+            st.session_state.compliment_data = None
+        
+        # Widget container
+        st.markdown('<div class="compliment-widget">', unsafe_allow_html=True)
+        
+        # Header
+        st.markdown('<div class="compliment-header">💖 AI Profile Compliment</div>', unsafe_allow_html=True)
+        st.markdown('<div class="compliment-subtitle">Get hyped up by AI!</div>', unsafe_allow_html=True)
+        
+        # Generate button
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("✨ Hype Me Up!", use_container_width=True, type="primary"):
+                with st.spinner("Generating good vibes and analyzing your awesome code..."):
+                    try:
+                        # Prepare profile data for compliment
+                        profile_data = {
+                            'username': username,
+                            'top_languages': data.get('top_languages', []),
+                            'total_commits': data.get('total_commits', 0),
+                            'public_repos': data.get('public_repos', 0),
+                            'followers': data.get('followers', 0)
+                        }
+                        
+                        # Generate compliment
+                        compliment_result = generate_github_compliment(profile_data, provider='auto')
+                        
+                        if compliment_result['success']:
+                            st.session_state.compliment_data = {
+                                'compliment': compliment_result['compliment'],
+                                'profile': profile_data,
+                                'source': compliment_result['source']
+                            }
+                        else:
+                            st.error("Failed to generate compliment")
+                            
+                    except Exception as e:
+                        st.error(f"Error generating compliment: {str(e)}")
+        
+        # Display compliment if available
+        if st.session_state.compliment_data:
+            compliment_text = st.session_state.compliment_data['compliment']
+            profile = st.session_state.compliment_data['profile']
+            
+            # Compliment display with styled block
+            st.markdown(f'<div class="compliment-text">"{compliment_text}"</div>', unsafe_allow_html=True)
+            
+            # Action buttons
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("🔄 New Compliment", use_container_width=True, key="new_compliment_btn"):
+                    with st.spinner("Generating more good vibes..."):
+                        try:
+                            compliment_result = generate_github_compliment(profile, provider='auto')
+                            if compliment_result['success']:
+                                st.session_state.compliment_data['compliment'] = compliment_result['compliment']
+                                st.session_state.compliment_data['source'] = compliment_result['source']
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: {str(e)}")
+            
+            with col2:
+                if st.button("📋 Copy", use_container_width=True, key="copy_compliment_btn"):
+                    st.code(compliment_text, language=None)
+                    st.success("Compliment copied!")
+            
+            with col3:
+                st.download_button(
+                    label="💾 Save",
+                    data=compliment_text,
+                    file_name=f"{username}_compliment.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="save_compliment_btn"
+                )
+            
+            # Profile stats
+            top_langs = [lang['name'] for lang in profile.get('top_languages', [])[:3]]
+            langs_str = ', '.join(top_langs) if top_langs else 'N/A'
+            
+            st.markdown(f"""
+            <div class="compliment-stats">
+                <div class="stat">
+                    <div class="stat-label">Top Languages</div>
+                    <div class="stat-value">{langs_str}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Total Commits</div>
+                    <div class="stat-value">{profile.get('total_commits', 'N/A')}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Public Repos</div>
+                    <div class="stat-value">{profile.get('public_repos', 'N/A')}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Show source
+            st.caption(f"✨ Generated using {st.session_state.compliment_data['source']}")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.warning("Please enter a GitHub username in the sidebar.")
+
+with tab10:
     st.subheader("Recent Activity")
     st.markdown("Shows your last 3 PR or Issue events from GitHub.")
 
@@ -624,7 +793,7 @@ with tab9:
         code_label = "HTML Code" if output_format == "HTML" else "Markdown Code"
         show_code_area(code, label=code_label)
 
-with tab10:
+with tab11:
     st.subheader("✨ Visual Elements")
     st.markdown("Add emojis, GIFs, or stickers to your canvas")
 
@@ -648,8 +817,8 @@ with tab10:
 
         st.session_state["canvas"].append(svg)
 
-# TAB 11: Trophy Card
-with tab11:
+# TAB 12: Trophy Card
+with tab12:
     st.subheader("🏆 GitHub Trophy")
     st.markdown("Display your achievements including stars, forks, followers, and repository quality tier!")
     
