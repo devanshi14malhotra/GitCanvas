@@ -1,7 +1,7 @@
 import hashlib
-from fastapi import FastAPI, Response, Query, Request
+from fastapi import FastAPI, Response, Query, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from generators import stats_card, lang_card, contrib_card, recent_activity_card, trophy_card, streak_card, repo_card
+from generators import stats_card, lang_card, contrib_card, recent_activity_card, trophy_card, streak_card, repo_card, gist_card
 from utils import github_api
 from utils.cache import cache_svg_response, get_cache_stats, clear_cache
 from typing import Optional
@@ -282,13 +282,69 @@ async def get_repos(
     # Validate inputs
     username = validate_username(username)
     theme = validate_theme(theme)
-    sort_by = validate_sort_by(sort_by)
     limit = validate_limit(limit, min_val=1, max_val=10)
     
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = repo_card.draw_repo_card(data, theme, custom_colors=custom_colors, sort_by=sort_by, limit=limit)
     return svg_response(svg_content, request)
+
+
+@app.get("/api/gist")
+async def get_gist(
+    request: Request,
+    username: str,
+    gist_id: str,
+    theme: str = "Default",
+    font: Optional[str] = Query(None, description="Custom font family for the SVG (e.g., 'Inter', 'Roboto')")
+):
+    """
+    Generate an SVG card for a specific GitHub Gist.
+    
+    Args:
+        username: GitHub username
+        gist_id: The ID of the gist to display
+        theme: Visual theme for the card
+        font: Optional custom font family
+        
+    Returns:
+        SVG image of the gist card
+        
+    Raises:
+        HTTPException 404: If the gist is not found
+    """
+    # Validate inputs
+    username = validate_username(username)
+    theme = validate_theme(theme)
+    
+    # Get optional token from Authorization header for higher rate limits
+    token = get_token_from_header(request)
+    
+    # Fetch user's gists
+    gists = github_api.fetch_user_gists(username, token)
+    
+    if not gists:
+        raise HTTPException(status_code=404, detail=f"No gists found for user '{username}' or user not found")
+    
+    # Find the specific gist by ID
+    target_gist = None
+    for gist in gists:
+        if gist.get("gist_id") == gist_id:
+            target_gist = gist
+            break
+    
+    if not target_gist:
+        raise HTTPException(status_code=404, detail=f"Gist with ID '{gist_id}' not found for user '{username}'")
+    
+    # Generate SVG
+    svg_content = gist_card.draw_gist_card(
+        target_gist,
+        theme_name=theme,
+        font_family=font
+    )
+    
+    return svg_response(svg_content, request)
+
 
 # Cache management endpoints
 
