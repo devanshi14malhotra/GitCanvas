@@ -547,3 +547,112 @@ def get_date_range_from_option(date_option, custom_start=None, custom_end=None):
         }
     
     return None
+
+
+from typing import Optional, List, Dict, Any
+
+@cache_github_api
+def fetch_user_gists(username: str, token: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Fetch user's public gists from GitHub REST API.
+    
+    Args:
+        username: GitHub username
+        token: Optional GitHub token for higher rate limits
+        
+    Returns:
+        List of dictionaries containing gist info:
+        - gist_id: The gist ID
+        - description: Gist description (may be empty)
+        - filename: Primary filename from the files object
+        - language: Programming language of the primary file
+        - updated_at: Last updated timestamp
+        
+    Returns empty list if user has no gists or on error.
+    """
+    try:
+        gists_url = f"https://api.github.com/users/{username}/gists"
+        headers = get_github_headers(token)
+        
+        try:
+            resp = requests.get(gists_url, headers=headers, timeout=10)
+            log_api_call(logger, gists_url, resp.status_code, has_token=bool(token))
+        except requests.RequestException as e:
+            logger.error(f"Failed to fetch gists for {username}: {e}")
+            return []
+        
+        # Handle rate limiting
+        if resp.status_code == 403:
+            rate_limit_remaining = resp.headers.get('X-RateLimit-Remaining')
+            if rate_limit_remaining == '0':
+                logger.error(f"Rate limit exceeded for gists API")
+                return []
+            logger.error(f"API forbidden error when fetching gists for {username}")
+            return []
+        
+        # Handle user not found
+        if resp.status_code == 404:
+            logger.error(f"User {username} not found")
+            return []
+        
+        # Handle other errors
+        if resp.status_code != 200:
+            logger.error(f"Gists API Error: Status {resp.status_code}")
+            return []
+        
+        try:
+            raw_gists = resp.json()
+        except ValueError as e:
+            logger.error(f"Invalid JSON in gists response: {e}")
+            return []
+        
+        # Handle empty gists or non-list response
+        if not isinstance(raw_gists, list):
+            logger.warning(f"Unexpected response format for gists of {username}")
+            return []
+        
+        if not raw_gists:
+            logger.info(f"User {username} has no public gists")
+            return []
+        
+        # Parse gists to extract required fields
+        parsed_gists = []
+        for gist in raw_gists:
+            try:
+                gist_id = gist.get('id')
+                if not gist_id:
+                    continue
+                
+                description = gist.get('description') or ""
+                updated_at = gist.get('updated_at') or gist.get('created_at', '')
+                
+                # Extract file info from files object
+                files = gist.get('files', {})
+                if not files:
+                    continue
+                
+                # Get the first file (primary file)
+                first_file_key = list(files.keys())[0]
+                first_file = files.get(first_file_key, {})
+                
+                filename = first_file.get('filename', first_file_key)
+                language = first_file.get('language', 'Unknown')
+                
+                parsed_gists.append({
+                    'gist_id': gist_id,
+                    'description': description,
+                    'filename': filename,
+                    'language': language,
+                    'updated_at': updated_at
+                })
+                
+            except Exception as e:
+                logger.warning(f"Error parsing individual gist: {e}")
+                continue
+        
+        logger.info(f"Successfully fetched {len(parsed_gists)} gists for {username}")
+        return parsed_gists
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in fetch_user_gists: {e}")
+        return []
