@@ -3,7 +3,7 @@ import math
 from themes.styles import THEMES
 from .svg_base import create_svg_base
 
-def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_languages=None):
+def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_languages=None, font_family=None):
     """
     Generates the Top Languages Card SVG.
     
@@ -12,6 +12,7 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
         theme_name: string key from THEMES
         custom_colors: dict with custom color overrides
         excluded_languages: list of language names to exclude (case-insensitive)
+        font_family: optional custom font family override (e.g. 'Inter', 'Roboto')
     """
     # FIXED: Handle both string theme name and pre-resolved theme dict
     if isinstance(theme_name, dict):
@@ -20,6 +21,9 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
     else:
         # Convert theme_name string to actual theme dictionary
         theme = THEMES.get(theme_name, THEMES["Default"]).copy()
+    
+    # Determine font family - use custom override if provided, otherwise fall back to theme
+    effective_font_family = font_family if font_family else theme.get("font_family", "Segoe UI, sans-serif")
         
     width = 450 # Resized from 300 to match Stats card
     
@@ -128,7 +132,7 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
 
         # 3. Content
         dwg.add(dwg.text("Top Languages".upper(), insert=(width/2, margin + 35), fill="white", font_size=16, 
-                         font_weight="800", font_family="'Inter', system-ui, sans-serif", text_anchor="middle", 
+                         font_weight="800", font_family=f"{effective_font_family}, system-ui, sans-serif", text_anchor="middle", 
                          letter_spacing=2, filter="url(#textGlow)"))
 
         # Calculate percentages
@@ -142,11 +146,11 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
             pct = (count / total) * 100
             
             # Label
-            dwg.add(dwg.text(lang, insert=(35, y), fill=text_col, font_size=12, font_family="'Inter', sans-serif"))
+            dwg.add(dwg.text(lang, insert=(35, y), fill=text_col, font_size=12, font_family=f"{effective_font_family}, sans-serif"))
             
             # Percentage
             dwg.add(dwg.text(f"{pct:.1f}%", insert=(width - 35, y), fill=text_col, font_size=12, 
-                             font_family="Verdana, sans-serif", text_anchor="end", opacity=0.8))
+                             font_family=f"{effective_font_family}, sans-serif", text_anchor="end", opacity=0.8))
             
             # Bar Background
             bar_y = y + 8
@@ -169,7 +173,7 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
         
         # Title
         dwg.add(dwg.text("Top Languages", insert=(20, 30), 
-                         fill=theme["title_color"], font_size=18, font_weight="bold", font_family="Segoe UI, sans-serif"))
+                         fill=theme["title_color"], font_size=18, font_weight="bold", font_family=effective_font_family))
         
         # Calculate percentages
         total = sum([c for l, c in langs])
@@ -181,7 +185,7 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
             pct = (count / total) * 100
             
             # Language Name
-            dwg.add(dwg.text(lang, insert=(20, y + 20), fill=theme["text_color"], font_size=14, font_family="Segoe UI, sans-serif"))
+            dwg.add(dwg.text(lang, insert=(20, y + 20), fill=theme["text_color"], font_size=14, font_family=effective_font_family))
             
             # Bar Background
             bar_x = 120
@@ -193,7 +197,7 @@ def draw_lang_card(data, theme_name="Default", custom_colors=None, excluded_lang
             dwg.add(dwg.rect(insert=(bar_x, y + 10), size=(fill_width, 10), rx=5, ry=5, fill=theme["title_color"]))
             
             # Percentage
-            dwg.add(dwg.text(f"{pct:.1f}%", insert=(width - 40, y + 20), fill=theme["text_color"], font_size=12, font_family="Segoe UI, sans-serif", text_anchor="end"))
+            dwg.add(dwg.text(f"{pct:.1f}%", insert=(width - 40, y + 20), fill=theme["text_color"], font_size=12, font_family=effective_font_family, text_anchor="end"))
 
         
     return dwg.tostring()

@@ -2,13 +2,14 @@ import svgwrite
 from themes.styles import THEMES
 from .svg_base import create_svg_base
 
-def draw_repo_card(data, theme_name="Default", custom_colors=None, sort_by="stars", limit=5):
+def draw_repo_card(data, theme_name="Default", custom_colors=None, sort_by="stars", limit=5, font_family=None):
     """
     Generates the Top Repositories Card SVG.
     data: dict with 'top_repos' list containing repo data
     theme_name: string key from THEMES
     sort_by: sorting criteria used (for display purposes)
     limit: number of repos displayed
+    font_family: optional custom font family override (e.g. 'Inter', 'Roboto')
     """
     repos = data.get("top_repos", [])
     
@@ -45,7 +46,8 @@ def draw_repo_card(data, theme_name="Default", custom_colors=None, sort_by="star
     
     dwg, theme = create_svg_base(theme_name, custom_colors, width, height, title)
     
-    font_family = theme["font_family"]
+    # Use custom font override if provided, otherwise fall back to theme
+    font_family = font_family if font_family else theme["font_family"]
     text_color = theme["text_color"]
     title_color = theme["title_color"]
     icon_color = theme["icon_color"]

@@ -187,7 +187,7 @@ def _add_timeline_labels(dwg, weeks, cols, rows, start_x, start_y, box_size, gap
             font_family=theme["font_family"],
             opacity=0.8
         ))
-def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range=None, animations_enabled=True):
+def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range=None, animations_enabled=True, font_family=None):
     """
     Generates the Contribution Graph Card SVG.
     Supports 'Snake', 'Space', 'Marvel' visualization logic.
@@ -199,6 +199,7 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         date_range: Optional dict with 'start' and 'end' date strings (YYYY-MM-DD)
                     to filter contributions. If None, shows all contributions.
         animations_enabled: Whether to enable CSS animations
+        font_family: optional custom font family override (e.g. 'Inter', 'Roboto')
     """
     # Save original theme name for comparison (fix from main branch)
     original_theme_name = theme_name
@@ -206,6 +207,9 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
     theme = THEMES.get(theme_name, THEMES["Default"]).copy()
     if custom_colors:
         theme.update(custom_colors)
+    
+    # Determine font family - use custom override if provided, otherwise fall back to theme
+    effective_font_family = font_family if font_family else theme.get("font_family", "Segoe UI, sans-serif")
     
     width = 500
     height = 170
@@ -414,7 +418,7 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         
         dwg.add(dwg.text("Less", insert=(legend_start_x, legend_y), 
                         fill=theme["text_color"], font_size=9, 
-                        font_family=theme["font_family"], opacity=0.6))
+                        font_family=effective_font_family, opacity=0.6))
         
         # Legend stones
         for i in range(5):
@@ -426,7 +430,7 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         
         dwg.add(dwg.text("More", insert=(legend_start_x + 90, legend_y), 
                         fill=theme["text_color"], font_size=9, 
-                        font_family=theme["font_family"], opacity=0.6))
+                        font_family=effective_font_family, opacity=0.6))
 
     elif original_theme_name == "Stranger_things":
         # Upside Down with demogorgon

@@ -43,11 +43,12 @@ def generate_social_badge_url(platform, label, color, logo, style="for-the-badge
     safe_color = color.replace("#", "")
     return f"https://img.shields.io/badge/{safe_label}-{safe_color}?style={style}&logo={logo}&logoColor={logo_color}"
 
-def draw_social_card(social_data, theme_name="Default", custom_colors=None, selected_platforms=None, icon_color=None):
+def draw_social_card(social_data, theme_name="Default", custom_colors=None, selected_platforms=None, icon_color=None, font_family=None):
     """
     Generates the Social Links Card SVG.
     
     Args:
+        font_family: optional custom font family override (e.g. 'Inter', 'Roboto')
         social_data: dict with social media URLs (e.g., {'twitter': 'https://twitter.com/user', ...})
         theme_name: string key from THEMES
         custom_colors: dict with custom color overrides
@@ -63,6 +64,9 @@ def draw_social_card(social_data, theme_name="Default", custom_colors=None, sele
     # Apply custom colors if provided
     if custom_colors:
         theme.update(custom_colors)
+    
+    # Determine font family - use custom override if provided, otherwise fall back to theme
+    effective_font_family = font_family if font_family else theme.get("font_family", "Segoe UI, sans-serif")
     
     # Filter to only selected platforms that have data
     if selected_platforms is None:
@@ -123,7 +127,7 @@ def draw_social_card(social_data, theme_name="Default", custom_colors=None, sele
         insert=(20, 35), 
         fill=theme["title_color"], 
         font_size=theme["title_font_size"], 
-        font_family=theme["font_family"], 
+        font_family=effective_font_family, 
         font_weight="bold"
     ))
     
@@ -186,7 +190,7 @@ def draw_social_card(social_data, theme_name="Default", custom_colors=None, sele
             insert=(icon_x + icon_size//2, y + badge_height//2 + 4),
             fill=f"#{badge_color}",
             font_size=10,
-            font_family=theme["font_family"],
+            font_family=effective_font_family,
             font_weight="bold",
             text_anchor="middle"
         ))
@@ -198,7 +202,7 @@ def draw_social_card(social_data, theme_name="Default", custom_colors=None, sele
             insert=(text_x, y + badge_height//2 + 4),
             fill="white",
             font_size=11,
-            font_family=theme["font_family"],
+            font_family=effective_font_family,
             font_weight="bold"
         ))
         

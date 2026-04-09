@@ -42,13 +42,14 @@ COUNTING_SCRIPT = """
 </script>
 """
 
-def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors=None, animations_enabled=True):
+def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors=None, animations_enabled=True, font_family=None):
     """
     Generates the Main Stats Card SVG.
     data: dict with user stats
     theme_name: string key from THEMES
     show_options: dict with toggles (e.g. {'stars': True, 'prs': False})
     animations_enabled: bool to enable/disable CSS animations
+    font_family: optional custom font family override (e.g. 'Inter', 'Roboto')
     """
     if show_options is None:
         show_options = {"stars": True, "commits": True, "repos": True, "followers": True}
@@ -64,6 +65,9 @@ def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors
         # Apply custom colors if provided
         if custom_colors:
             theme.update(custom_colors)
+    
+    # Determine font family - use custom override if provided, otherwise fall back to theme
+    effective_font_family = font_family if font_family else theme["font_family"]
 
     width = 450
     # Calculate height dynamically based on visible items
@@ -262,7 +266,7 @@ def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors
         d_font_size = max(11, base_f - (n_len - 15) // 1.5) if n_len > 15 else base_f
         
         dwg.add(dwg.text(title_text, insert=(width/2, margin + 35), fill="white", font_size=d_font_size, 
-                         font_weight="800", font_family="'Inter', system-ui, sans-serif", text_anchor="middle", 
+                         font_weight="800", font_family=f"{effective_font_family}, system-ui, sans-serif", text_anchor="middle", 
                          letter_spacing=2, filter="url(#textGlow)"))
         
         # Adjust start_y for stats
@@ -285,24 +289,23 @@ def draw_stats_card(data, theme_name="Default", show_options=None, custom_colors
                 
                 # Label
                 dwg.add(dwg.text(f"{label}:", insert=(margin + 25, current_y), fill=text_col, 
-                                 font_size=11, font_family="'Inter', sans-serif", opacity=0.8))
+                                 font_size=11, font_family=f"{effective_font_family}, sans-serif", opacity=0.8))
                 
                 # Value
                 dwg.add(dwg.text(f"{display_value}", insert=(width - margin - 25, current_y), fill="white", 
-                                 font_size=11, font_family="'Inter', sans-serif", text_anchor="end", font_weight="bold"))
+                                 font_size=11, font_family=f"{effective_font_family}, sans-serif", text_anchor="end", font_weight="bold"))
                 
                 current_y += item_height
         
         return dwg.tostring()
     
     
-    # Title
-    font_family = theme["font_family"]
+    # Title - use effective_font_family determined earlier
     title_params = {
         "insert": (20, 35),
         "fill": theme["title_color"],
         "font_size": theme["title_font_size"],
-        "font_family": font_family,
+        "font_family": effective_font_family,
         "font_weight": "bold"
     }
     
