@@ -116,7 +116,8 @@ async def get_stats(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    font: Optional[str] = Query(None, description="Custom font family for the SVG (e.g., 'Inter', 'Roboto')")
 ):
     # Validate inputs
     username = validate_username(username)
@@ -135,7 +136,7 @@ async def get_stats(
     }
     
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
-    svg_content = generate_cached_svg(stats_card.draw_stats_card, data, theme, show_options=show_options, custom_colors=custom_colors, animations_enabled=animations_enabled)
+    svg_content = generate_cached_svg(stats_card.draw_stats_card, data, theme, show_options=show_options, custom_colors=custom_colors, animations_enabled=animations_enabled, font_family=font)
     return svg_response(svg_content , request)
 
 
@@ -149,7 +150,8 @@ async def get_languages(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    font: Optional[str] = Query(None, description="Custom font family for the SVG (e.g., 'Inter', 'Roboto')")
 ):
     # Validate inputs
     username = validate_username(username)
@@ -165,7 +167,7 @@ async def get_languages(
     if param_value:
         excluded_languages_list = [lang.strip() for lang in param_value.split(',') if lang.strip()]
     
-    svg_content = generate_cached_svg(lang_card.draw_lang_card, data, theme, custom_colors=custom_colors, excluded_languages=excluded_languages_list)
+    svg_content = generate_cached_svg(lang_card.draw_lang_card, data, theme, custom_colors=custom_colors, excluded_languages=excluded_languages_list, font_family=font)
     return svg_response(svg_content , request)
 
 
@@ -181,7 +183,8 @@ async def get_contributions(
     text_color: Optional[str] = None,
     border_color: Optional[str] = None,
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    font: Optional[str] = Query(None, description="Custom font family for the SVG (e.g., 'Inter', 'Roboto')")
 ):
     # Validate inputs
     username = validate_username(username)
@@ -200,7 +203,7 @@ async def get_contributions(
             'end': end_date
         }
     
-    svg_content = generate_cached_svg(contrib_card.draw_contrib_card, data, theme, custom_colors=custom_colors, date_range=date_range, animations_enabled=animations_enabled)
+    svg_content = generate_cached_svg(contrib_card.draw_contrib_card, data, theme, custom_colors=custom_colors, date_range=date_range, animations_enabled=animations_enabled, font_family=font)
     return svg_response(svg_content , request)
 
 
@@ -235,7 +238,8 @@ async def get_trophy(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    font: Optional[str] = Query(None, description="Custom font family for the SVG (e.g., 'Inter', 'Roboto')")
 ):
     # Validate inputs
     username = validate_username(username)
@@ -243,7 +247,7 @@ async def get_trophy(
     
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
-    svg_content = trophy_card.draw_trophy_card(data, theme, custom_colors=custom_colors)
+    svg_content = trophy_card.draw_trophy_card(data, theme, custom_colors=custom_colors, font_family=font)
     return svg_response(svg_content, request)
 
 
@@ -255,7 +259,8 @@ async def get_streak(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    font: Optional[str] = Query(None, description="Custom font family for the SVG (e.g., 'Inter', 'Roboto')")
 ):
     # Validate inputs
     username = validate_username(username)
@@ -263,7 +268,7 @@ async def get_streak(
     
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
-    svg_content = streak_card.draw_streak_card(data, theme, custom_colors=custom_colors)
+    svg_content = streak_card.draw_streak_card(data, theme, custom_colors=custom_colors, font_family=font)
     return svg_response(svg_content, request)
 
 
@@ -277,7 +282,8 @@ async def get_repos(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    font: Optional[str] = Query(None, description="Custom font family for the SVG (e.g., 'Inter', 'Roboto')")
 ):
     # Validate inputs
     username = validate_username(username)
@@ -287,7 +293,7 @@ async def get_repos(
     
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
-    svg_content = repo_card.draw_repo_card(data, theme, custom_colors=custom_colors, sort_by=sort_by, limit=limit)
+    svg_content = repo_card.draw_repo_card(data, theme, custom_colors=custom_colors, sort_by=sort_by, limit=limit, font_family=font)
     return svg_response(svg_content, request)
 
 # Cache management endpoints
