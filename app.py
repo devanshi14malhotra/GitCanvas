@@ -157,6 +157,37 @@ with st.sidebar:
 
     github_token = st.text_input("GitHub Token (enter your token to view actual data)", type="password", help="Enter your GitHub token to fetch contribution data")
     
+    # AI Provider Settings
+    with st.expander("🤖 AI Settings", expanded=False):
+        st.caption("Configure AI providers for Roast and Compliment features")
+        
+        ai_provider = st.radio(
+            "AI Provider",
+            ["Auto", "Gemini", "OpenAI"],
+            index=0,
+            help="Select which AI provider to use for Roast and Compliment features"
+        )
+        
+        # Check API keys availability
+        import os
+        has_gemini = bool(os.getenv('GEMINI_API_KEY'))
+        has_openai = bool(os.getenv('OPENAI_API_KEY'))
+        
+        if ai_provider == "Gemini" and not has_gemini:
+            st.warning("⚠️ Gemini API key not configured in .env")
+        elif ai_provider == "OpenAI" and not has_openai:
+            st.warning("⚠️ OpenAI API key not configured in .env")
+        elif ai_provider == "Auto" and not (has_gemini or has_openai):
+            st.warning("⚠️ No AI API keys configured. AI features will use fallback.")
+        
+        # Compliment Tone Selector
+        compliment_tone = st.selectbox(
+            "Compliment Tone",
+            ["Motivational", "Tech Recruiter", "Over-the-top Hype"],
+            index=0,
+            help="Select the tone/style for AI-generated compliments"
+        )
+    
     # Animation toggle
     animations_enabled = st.checkbox("Enable Animations", value=False, help="Enable SVG animations for cards that support it")
     
@@ -589,6 +620,20 @@ with tab9:
     st.subheader("💖 AI Profile Compliment")
     st.markdown("Let AI hype up your GitHub profile with positivity and encouragement!")
     
+    # Check API key availability from sidebar settings
+    has_gemini_key = bool(os.getenv('GEMINI_API_KEY'))
+    has_openai_key = bool(os.getenv('OPENAI_API_KEY'))
+    api_configured = (ai_provider == "Auto" and (has_gemini_key or has_openai_key)) or \
+                     (ai_provider == "Gemini" and has_gemini_key) or \
+                     (ai_provider == "OpenAI" and has_openai_key)
+    
+    # Show API key warning if not configured
+    if not api_configured:
+        st.warning("⚠️ Please configure an AI provider API key in the 🤖 AI Settings sidebar to use this feature with AI. Using fallback compliments for now.")
+    
+    # Show current settings
+    st.caption(f"AI Provider: {ai_provider} | Tone: {compliment_tone}")
+    
     # Custom CSS for the compliment widget
     st.markdown("""
     <style>
@@ -673,8 +718,9 @@ with tab9:
                             'followers': data.get('followers', 0)
                         }
                         
-                        # Generate compliment
-                        compliment_result = generate_github_compliment(profile_data, provider='auto')
+                        # Generate compliment with selected provider and tone
+                        provider_lower = ai_provider.lower()
+                        compliment_result = generate_github_compliment(profile_data, provider=provider_lower, tone=compliment_tone)
                         
                         if compliment_result['success']:
                             st.session_state.compliment_data = {
@@ -702,7 +748,8 @@ with tab9:
                 if st.button("🔄 New Compliment", use_container_width=True, key="new_compliment_btn"):
                     with st.spinner("Generating more good vibes..."):
                         try:
-                            compliment_result = generate_github_compliment(profile, provider='auto')
+                            provider_lower = ai_provider.lower()
+                            compliment_result = generate_github_compliment(profile, provider=provider_lower, tone=compliment_tone)
                             if compliment_result['success']:
                                 st.session_state.compliment_data['compliment'] = compliment_result['compliment']
                                 st.session_state.compliment_data['source'] = compliment_result['source']

@@ -36,8 +36,44 @@ if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-def create_compliment_prompt(profile_data: Dict) -> str:
-    """Create the prompt for AI based on profile data"""
+def get_tone_instructions(tone: str) -> str:
+    """Get system instructions based on tone selection"""
+    tone_configs = {
+        "Motivational": {
+            "persona": "You are a supportive coding coach and mentor who believes in the developer's potential.",
+            "style": "Encouraging, warm, and focused on growth and dedication. Praise their consistency and journey.",
+            "examples": [
+                "Your {total_commits} commits show incredible dedication - you're building something amazing!",
+                "Every line of {top_lang} you write is a step toward mastery. Keep going!",
+                "Your coding journey inspires others. {public_repos} repos of pure passion!"
+            ]
+        },
+        "Tech Recruiter": {
+            "persona": "You are an enthusiastic tech recruiter who sees incredible potential in every developer.",
+            "style": "Professional but excited, highlighting marketable skills and achievements. Use recruiting buzzwords sparingly.",
+            "examples": [
+                "With {total_commits} commits and {top_lang} expertise, you're exactly what top teams are looking for!",
+                "Your {public_repos} public repos showcase a portfolio that would impress any hiring manager!",
+                "Rockstar developer alert! Your GitHub is a goldmine of technical excellence!"
+            ]
+        },
+        "Over-the-top Hype": {
+            "persona": "You are the ultimate hype person - unfiltered enthusiasm and maximum energy!",
+            "style": "Extremely enthusiastic, use caps and exclamation marks, compare them to tech legends, be DRAMATIC!",
+            "examples": [
+                "HOLY COMMITS! {total_commits} contributions?! You're basically the Linus Torvalds of {top_lang}! 🔥",
+                "LEGENDARY STATUS ACHIEVED! Your code is changing the GAME! 🚀",
+                "STOP THE PRESSES! We found the next tech billionaire! {public_repos} repos of GENIUS! 💎"
+            ]
+        }
+    }
+    
+    config = tone_configs.get(tone, tone_configs["Motivational"])
+    return config
+
+
+def create_compliment_prompt(profile_data: Dict, tone: str = "Motivational") -> str:
+    """Create the prompt for AI based on profile data and tone"""
     username = profile_data.get('username', 'Unknown')
     top_languages = profile_data.get('top_languages', [])
     total_commits = profile_data.get('total_commits', 0)
@@ -46,6 +82,9 @@ def create_compliment_prompt(profile_data: Dict) -> str:
     
     # Format languages
     languages_str = ', '.join([lang['name'] for lang in top_languages[:3]]) if top_languages else 'various languages'
+    top_lang = top_languages[0]['name'] if top_languages else 'Code'
+    
+    tone_config = get_tone_instructions(tone)
     
     prompt = f"""Generate a single highly positive, enthusiastic one-liner compliment for this GitHub developer:
 
@@ -55,25 +94,25 @@ Total Commits: {total_commits}
 Public Repos: {public_repos}
 Followers: {followers}
 
-Praise their coding journey, their dedication, their tech stack choices, or their impact on the community. 
-Make it uplifting, motivating, and fun. Examples of the style:
-- "Your Python code is so elegant, Guido van Rossum takes notes from YOUR style guide!"
-- "500 commits of pure excellence - you're basically the main character of tech!"
-- "Building with JavaScript like a digital architect designing the future!"
-- "Your commit history reads like a success story that inspires other devs!"
-- "{total_commits} contributions and counting - you're a coding powerhouse!"
+Tone Instructions:
+{tone_config['persona']}
+Style: {tone_config['style']}
+
+Examples of this tone:
+{chr(10).join(['- "' + ex.format(total_commits=total_commits, top_lang=top_lang, public_repos=public_repos) + '"' for ex in tone_config['examples']])}
 
 Generate ONE creative, uplifting compliment now (no quotes, just the text):"""
     
     return prompt
 
 
-def generate_compliment_with_openai(profile_data: Dict) -> str:
+def generate_compliment_with_openai(profile_data: Dict, tone: str = "Motivational") -> str:
     """Generate compliment using OpenAI GPT"""
     if not OPENAI_API_KEY:
         raise ValueError("OpenAI API key not configured")
     
-    prompt = create_compliment_prompt(profile_data)
+    prompt = create_compliment_prompt(profile_data, tone)
+    tone_config = get_tone_instructions(tone)
     
     try:
         response = openai_client.chat.completions.create(
@@ -81,7 +120,7 @@ def generate_compliment_with_openai(profile_data: Dict) -> str:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are an enthusiastic, hype-building tech recruiter and mentor. You write extremely positive, motivating compliments that celebrate developers' achievements. Keep it uplifting, fun, and one line only."
+                    "content": f"{tone_config['persona']} {tone_config['style']} Keep it to one line only."
                 },
                 {
                     "role": "user",
@@ -102,19 +141,20 @@ def generate_compliment_with_openai(profile_data: Dict) -> str:
         raise
 
 
-def generate_compliment_with_gemini(profile_data: Dict) -> str:
+def generate_compliment_with_gemini(profile_data: Dict, tone: str = "Motivational") -> str:
     """Generate compliment using Google Gemini"""
     if not GEMINI_API_KEY:
         raise ValueError("Gemini API key not configured")
     if not _HAS_GENAI:
         raise ImportError("google.generativeai is not installed")
     
-    prompt = create_compliment_prompt(profile_data)
+    prompt = create_compliment_prompt(profile_data, tone)
+    tone_config = get_tone_instructions(tone)
     
     try:
         model = genai.GenerativeModel('gemini-pro')
         
-        system_prompt = "You are an enthusiastic tech mentor who generates ONE uplifting, highly positive one-liner compliment. Celebrate the developer's achievements with hype and encouragement. Return ONLY the compliment text, no quotes or explanation.\n\n"
+        system_prompt = f"{tone_config['persona']} {tone_config['style']} Generate ONE uplifting, highly positive one-liner compliment. Return ONLY the compliment text, no quotes or explanation.\n\n"
         
         response = model.generate_content(
             system_prompt + prompt,
@@ -158,13 +198,25 @@ def get_fallback_compliment(profile_data: Dict) -> str:
     return random.choice(fallback_compliments)
 
 
-def generate_github_compliment(profile_data: Dict, provider: str = 'gemini') -> Dict:
+def check_api_key_configured(provider: str) -> bool:
+    """Check if the requested AI provider has API keys configured"""
+    if provider == 'gemini':
+        return bool(GEMINI_API_KEY and _HAS_GENAI)
+    elif provider == 'openai':
+        return bool(OPENAI_API_KEY)
+    elif provider == 'auto':
+        return bool((GEMINI_API_KEY and _HAS_GENAI) or OPENAI_API_KEY)
+    return False
+
+
+def generate_github_compliment(profile_data: Dict, provider: str = 'auto', tone: str = 'Motivational') -> Dict:
     """
     Main function to generate compliment with fallback mechanism
     
     Args:
         profile_data: Dict containing user stats (username, top_languages, total_commits, public_repos, followers)
         provider: Preferred AI provider ('gemini', 'openai', or 'auto' to try both)
+        tone: Compliment tone style ('Motivational', 'Tech Recruiter', 'Over-the-top Hype')
     
     Returns:
         Dict with compliment and metadata
@@ -183,12 +235,25 @@ def generate_github_compliment(profile_data: Dict, provider: str = 'gemini') -> 
             "error": "Invalid profile data"
         }
     
+    # Check if any API key is configured
+    if not check_api_key_configured(provider):
+        logger.warning(f"No API key configured for provider '{provider}', using fallback")
+        compliment_text = get_fallback_compliment(profile_data)
+        source = "fallback_no_api_key"
+        return {
+            "compliment": compliment_text,
+            "source": source,
+            "username": profile_data.get('username'),
+            "success": True,
+            "api_key_missing": True
+        }
+    
     # Auto mode: try preferred provider first, then fallback
     if provider == 'auto':
         # Try Gemini first (usually faster and free tier available)
         if GEMINI_API_KEY and _HAS_GENAI:
             try:
-                compliment_text = generate_compliment_with_gemini(profile_data)
+                compliment_text = generate_compliment_with_gemini(profile_data, tone)
                 source = "gemini"
             except Exception as e:
                 logger.warning(f"Gemini failed: {e}")
@@ -196,7 +261,7 @@ def generate_github_compliment(profile_data: Dict, provider: str = 'gemini') -> 
         # Try OpenAI if Gemini failed or not available
         if not compliment_text and OPENAI_API_KEY:
             try:
-                compliment_text = generate_compliment_with_openai(profile_data)
+                compliment_text = generate_compliment_with_openai(profile_data, tone)
                 source = "openai"
             except Exception as e:
                 logger.warning(f"OpenAI failed: {e}")
@@ -209,7 +274,7 @@ def generate_github_compliment(profile_data: Dict, provider: str = 'gemini') -> 
             logger.warning("google.generativeai not installed, using fallback")
         else:
             try:
-                compliment_text = generate_compliment_with_gemini(profile_data)
+                compliment_text = generate_compliment_with_gemini(profile_data, tone)
                 source = "gemini"
             except Exception as e:
                 logger.warning(f"Gemini failed: {e}")
@@ -219,7 +284,7 @@ def generate_github_compliment(profile_data: Dict, provider: str = 'gemini') -> 
             logger.warning("OpenAI API key not configured, using fallback")
         else:
             try:
-                compliment_text = generate_compliment_with_openai(profile_data)
+                compliment_text = generate_compliment_with_openai(profile_data, tone)
                 source = "openai"
             except Exception as e:
                 logger.warning(f"OpenAI failed: {e}")
@@ -233,7 +298,8 @@ def generate_github_compliment(profile_data: Dict, provider: str = 'gemini') -> 
         "compliment": compliment_text,
         "source": source,
         "username": profile_data.get('username'),
-        "success": True
+        "success": True,
+        "api_key_missing": False
     }
 
 
