@@ -107,15 +107,18 @@ with st.sidebar:
         if not selected_tags:
             tag_match = True
         elif not theme_tags:
-            tag_match = True
+            tag_match = False  # Hide themes without tags when tag filter is active
         else:
             tag_match = any(tag in theme_tags for tag in selected_tags)
         return search_match and tag_match
 
-    filtered_theme_options = [
+    # Filter from all_themes, then reorder to match theme_options (predefined first, custom last)
+    filtered_set = {
         name for name, props in all_themes.items()
         if matches_filter(name, props)
-    ] or theme_options  # fallback to all if nothing matches
+    }
+    # Preserve original ordering: predefined themes first, then custom
+    filtered_theme_options = [name for name in theme_options if name in filtered_set] or theme_options  # fallback to all if nothing matches
 
     selected_theme = st.selectbox("Select Theme", filtered_theme_options)
     
