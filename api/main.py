@@ -43,24 +43,80 @@ def generate_cached_svg(generator_func, *args, **kwargs):
     return generator_func(*args, **kwargs)
 
 
-def svg_response(svg_content: str, request: Request):
-    etag = hashlib.md5(svg_content.encode("utf-8")).hexdigest()
+def image_response(svg_content: str, request: Request, format: str = "svg"):
+    format = format.lower()
+    if format not in ["svg", "png", "jpeg", "jpg"]:
+        raise HTTPException(status_code=400, detail="Invalid format. Supported formats: svg, png, jpeg")
+
+    etag_content = f"{svg_content}_{format}"
+    etag = hashlib.md5(etag_content.encode("utf-8")).hexdigest()
 
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304)
 
+    if format == "svg":
+        content = svg_content
+        media_type = "image/svg+xml"
+    else:
+        try:
+            import cairosvg
+        except (ImportError, OSError):
+            raise HTTPException(
+                status_code=500,
+                detail="Server-side image generation is disabled (Cairo library not found). Please use format=svg."
+            )
+            
+        try:
+            png_bytes = cairosvg.svg2png(bytestring=svg_content.encode("utf-8"))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error generating PNG: {e}")
+
+        if format == "png":
+            content = png_bytes
+            media_type = "image/png"
+            
+        elif format in ["jpeg", "jpg"]:
+            try:
+                from PIL import Image
+                import io
+            except ImportError:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Server-side JPEG generation is disabled (Pillow library not found). Please use format=svg or png."
+                )
+            try:
+                img = Image.open(io.BytesIO(png_bytes))
+                if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[3])
+                    img = background
+                else:
+                    img = img.convert('RGB')
+                    
+                out = io.BytesIO()
+                img.save(out, format="JPEG", quality=90)
+                content = out.getvalue()
+                media_type = "image/jpeg"
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error generating JPEG: {e}")
+
+    headers = {
+        "Cache-Control": "public, max-age=14400, s-maxage=14400",
+        "ETag": etag,
+        "Vary": "Accept-Encoding",
+        "X-Content-Type-Options": "nosniff"
+    }
+    
+    if format == "svg":
+        headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
+        headers["X-Frame-Options"] = "SAMEORIGIN"
+
     return Response(
-        content=svg_content,
-        media_type="image/svg+xml",
-        headers={
-            "Cache-Control": "public, max-age=14400, s-maxage=14400",
-            "ETag": etag,
-            "Vary": "Accept-Encoding",
-            # Security headers to prevent XSS
-            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:",
-            "X-Content-Type-Options": "nosniff",
-            "X-Frame-Options": "SAMEORIGIN"
-        }
+        content=content,
+        media_type=media_type,
+        headers=headers
     )
 
 
@@ -151,7 +207,8 @@ async def get_stats(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    format: str = "svg"
 ):
     # Validate inputs
     username = validate_username(username)
@@ -171,7 +228,7 @@ async def get_stats(
     
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = generate_cached_svg(stats_card.draw_stats_card, data, theme, show_options=show_options, custom_colors=custom_colors, animations_enabled=animations_enabled)
-    return svg_response(svg_content , request)
+    return image_response(svg_content, request, format)
 
 
 @app.get("/api/languages")
@@ -184,7 +241,8 @@ async def get_languages(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    format: str = "svg"
 ):
     # Validate inputs
     username = validate_username(username)
@@ -201,7 +259,7 @@ async def get_languages(
         excluded_languages_list = [lang.strip() for lang in param_value.split(',') if lang.strip()]
     
     svg_content = generate_cached_svg(lang_card.draw_lang_card, data, theme, custom_colors=custom_colors, excluded_languages=excluded_languages_list)
-    return svg_response(svg_content , request)
+    return image_response(svg_content, request, format)
 
 
 @app.get("/api/contributions")
@@ -216,7 +274,8 @@ async def get_contributions(
     text_color: Optional[str] = None,
     border_color: Optional[str] = None,
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    format: str = "svg"
 ):
     # Validate inputs
     username = validate_username(username)
@@ -236,7 +295,7 @@ async def get_contributions(
         }
     
     svg_content = generate_cached_svg(contrib_card.draw_contrib_card, data, theme, custom_colors=custom_colors, date_range=date_range, animations_enabled=animations_enabled)
-    return svg_response(svg_content , request)
+    return image_response(svg_content, request, format)
 
 
 @app.get("/api/recent")
@@ -247,7 +306,8 @@ async def get_recent(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    format: str = "svg"
 ):
     # Validate inputs
     username = validate_username(username)
@@ -259,7 +319,7 @@ async def get_recent(
     
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = recent_activity_card.draw_recent_activity_card({'username': username}, theme, custom_colors=custom_colors, token=token)
-    return svg_response(svg_content, request)
+    return image_response(svg_content, request, format)
 
 
 @app.get("/api/trophy")
@@ -270,7 +330,8 @@ async def get_trophy(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    format: str = "svg"
 ):
     # Validate inputs
     username = validate_username(username)
@@ -279,7 +340,7 @@ async def get_trophy(
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = trophy_card.draw_trophy_card(data, theme, custom_colors=custom_colors)
-    return svg_response(svg_content, request)
+    return image_response(svg_content, request, format)
 
 
 @app.get("/api/streak")
@@ -290,7 +351,8 @@ async def get_streak(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    format: str = "svg"
 ):
     # Validate inputs
     username = validate_username(username)
@@ -299,7 +361,7 @@ async def get_streak(
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = streak_card.draw_streak_card(data, theme, custom_colors=custom_colors)
-    return svg_response(svg_content, request)
+    return image_response(svg_content, request, format)
 
 
 @app.get("/api/repos")
@@ -312,7 +374,8 @@ async def get_repos(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    format: str = "svg"
 ):
     # Validate inputs
     username = validate_username(username)
@@ -323,7 +386,7 @@ async def get_repos(
     data = github_api.get_live_github_data(username) or github_api.get_mock_data(username)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
     svg_content = repo_card.draw_repo_card(data, theme, custom_colors=custom_colors, sort_by=sort_by, limit=limit)
-    return svg_response(svg_content, request)
+    return image_response(svg_content, request, format)
 
 
 @app.get("/api/social_card")
@@ -340,7 +403,8 @@ async def get_social_card(
     bg_color: Optional[str] = None,
     title_color: Optional[str] = None,
     text_color: Optional[str] = None,
-    border_color: Optional[str] = None
+    border_color: Optional[str] = None,
+    format: str = "svg"
 ):
     theme = validate_theme(theme)
     custom_colors = parse_colors(bg_color, title_color, text_color, border_color)
@@ -378,7 +442,7 @@ async def get_social_card(
         selected_platforms=selected_platforms,
         icon_color=icon_color,
     )
-    return svg_response(svg_content, request)
+    return image_response(svg_content, request, format)
 
 
 @app.get("/api/badges")

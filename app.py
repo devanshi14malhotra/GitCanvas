@@ -336,7 +336,7 @@ if data is None:
 
 
 # Ensure backward compatibility with old cached data
-if "top_repos" not in data:
+if data and "top_repos" not in data:
     data["top_repos"] = []
 
 # Initialize other missing fields with defaults
