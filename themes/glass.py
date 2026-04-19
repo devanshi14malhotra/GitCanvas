@@ -38,10 +38,21 @@ def render(data):
     # Contributions
     x = 60
     y = 80
-    for day in data["contributions"]:
-        count = day["count"]
-        if count == 0:
-            continue
+    contributions = data.get("contributions", [])
+    
+    if not contributions:
+        # Display empty state message
+        dwg.add(dwg.text(
+            "No contributions data available",
+            insert=(width/2, height/2),
+            fill=theme.get("text_color", "#c9d1d9"),
+            font_size=14,
+            text_anchor="middle"
+        ))
+        return dwg.tostring()
+    
+    for day in contributions:
+        count = day.get("count", 0)
 
         r = min(4 + count, 10)
         dwg.add(
