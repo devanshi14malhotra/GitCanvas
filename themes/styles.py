@@ -107,10 +107,21 @@ THEMES = {
         "text_color": "#ffffff",
         "icon_color": "#ff00ff",
         "font_family": "'Courier New', monospace",
-        "title_font_size": 18,
+        "title_font_size": 18, 
         "text_font_size": 14,
         "tags": ["dark", "neon", "colorful", "fun", "bold"]
-    }
+    },
+    "Star Wars: The Force": {
+    "bg_color": "#0B0C10",        # Deep space black
+    "border_color": "#FFE81F",     # Star Wars yellow for borders
+    "title_color": "#4BD5EE",      # Jedi Blue for titles
+    "text_color": "#FFFFFF",       # White text for contrast
+    "icon_color": "#FF0000",       # Sith Red for icons
+    "font_family": "'Orbitron', 'Courier New', monospace",
+    "title_font_size": 20,
+    "text_font_size": 14,
+    "tags": ["dark", "space", "sci-fi", "star wars", "colorful", "popular"]
+    },
 }
 import json
 import os
