@@ -19,10 +19,9 @@ def draw_petal(dwg,cx,cy,size,color,opacity,rotation=0):
         fill_opacity = opacity,
         stroke = "#FFF8F0",
         stroke_opacity = opacity,
-
     )
     
-    petal.rotate(rotation,center = (cx,cy)),
+    petal.rotate(rotation,center = (cx,cy))
     return petal
 
 def draw_sakura_flower(dwg,cx,cy,size,color,opacity):
@@ -42,7 +41,7 @@ def draw_sakura_flower(dwg,cx,cy,size,color,opacity):
 def render(data):
     """
     Sakura/Japanese Theme
-    ontributions are Cherry blossom Flowers blooming on a Kyoto night sky.
+    contributions are Cherry blossom Flowers blooming on a Kyoto night sky.
     Low Activity = small plate petals
     Peak Activity = large deep magenta full bloom flowers
 
@@ -68,7 +67,7 @@ def render(data):
     for _ in range(120):
         x = random.randint(0,width)
         y = random.randint(0,height//2)
-        r = random.uniform(0.3,0.3)
+        r = 0.3
         opacity = random.uniform(0.1, 0.4)
         dwg.add(dwg.circle(
             center = (x,y),
@@ -158,7 +157,7 @@ def render(data):
         else:
             color = SAKURA_COLORS[4]
 
-        OPACITY = min(0.5 + count*0.04, 1.0)
+        opacity = min(0.5 + count*0.04, 1.0)
 
         # Soft glow for high activity 
         if count > 8:
