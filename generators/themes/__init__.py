@@ -11,6 +11,7 @@ from .supernatural_themes import render_stranger_things_theme
 from .sports_themes import render_cricket_theme
 from .modern_themes import render_cyberpunk_theme, render_ocean_theme
 from .advanced_themes import render_glass_theme, render_neural_theme, render_default_theme
+from .sakura_theme import render_sakura_theme
 
 # Theme dispatcher: maps theme names to rendering functions
 THEME_DISPATCHER = {
@@ -25,6 +26,7 @@ THEME_DISPATCHER = {
     "Glass": render_glass_theme,
     "Neural": render_neural_theme,
     "Matrix": None,  # Matrix delegates to its own module
+    "Sakura": render_sakura_theme,
 }
 
 __all__ = [
@@ -40,4 +42,5 @@ __all__ = [
     "render_glass_theme",
     "render_neural_theme",
     "render_default_theme",
+    "render_sakura_theme",
 ]
