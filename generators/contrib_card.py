@@ -786,6 +786,7 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         svg = matrix.render(data, theme)
         return svg
     
+    
     # Get the appropriate theme renderer from dispatcher
     theme_renderer = THEME_DISPATCHER.get(original_theme_name)
     

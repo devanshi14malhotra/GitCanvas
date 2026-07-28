@@ -222,5 +222,16 @@ THEMES["Retro"] = {
 }
 THEMES.pop("Aurora_gradient", None)
 THEMES["Aurora Gradient"] = AURORA_GRADIENT.copy()
+THEMES["Sakura"] = {
+    "bg_color": "#0D0D2B",
+    "border_color":"#FF8FAB",
+    "title_color":"#FFB7C5",
+    "text_color":"#FFF8F0",
+    "icon_color":"#FF6B9D",
+    "font_family":"Georgia,'Times New Roman',serif",
+    "title_font_size":20,
+    "text_font_size":14,
+    "tags":["dark","japanese","elegant","pink","aesthetic"]
+}
 # Load custom themes on module import
 CUSTOM_THEMES = load_custom_themes()
