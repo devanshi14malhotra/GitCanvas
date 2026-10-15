@@ -11,8 +11,8 @@ from urllib.parse import quote
 HEX_COLOR_REGEX = re.compile(r'^#[0-9A-Fa-f]{6}$')
 from dotenv import load_dotenv
 from config.settings import get_settings
-from roast_widget_streamlit import render_roast_widget
-from compliment_widget_streamlit import render_compliment_widget
+from ui.roast_widget import render_roast_widget
+from ui.compliment_widget import render_compliment_widget
 from ai.description_generator import generate_github_description
 from generators import stats_card, lang_card, contrib_card, badge_generator, recent_activity_card, streak_card, repo_card, social_card, trophy_card, sparkline, actions_card, achievement_card
 from utils import github_api
@@ -26,6 +26,7 @@ from utils.theme_state import reset_theme_filter_state
 from themes.styles import THEMES, get_all_themes, CUSTOM_THEMES
 from utils.theme_storage import get_storage_backend
 from utils.error_card import draw_error_card
+from utils.github_tokens import configured_tokens
 from generators.visual_elements import emoji_element, gif_element, sticker_element
 try:
     from generators.svg_base import get_svg_font_style as _shared_get_svg_font_style
@@ -91,7 +92,7 @@ except ImportError:
             """
 
         return composite + "</svg>"
-from theme_gallery import render_theme_gallery 
+from ui.theme_gallery import render_theme_gallery
 
 
 
@@ -487,17 +488,22 @@ with st.sidebar:
     github_token = st.text_input(
         "GitHub Token (enter your token to view actual data)",
         type="password",
-        help="Paste a token here, or set GITHUB_TOKEN in a .env file in the project root. Sidebar value overrides .env.",
+        help="Paste your own token here, or configure server-side GITHUB_TOKEN_1, GITHUB_TOKEN_2, and GITHUB_TOKEN_3 secrets.",
     )
 
     # Resolve token once so UI status + data loading stay consistent.
     _github_from_sidebar = (github_token or "").strip()
-    effective_github_token = _github_from_sidebar or _settings.github_token_value()
+    # Server-side tokens are resolved inside the GitHub API layer so the app can
+    # fail over without ever exposing them to the browser or generated URLs.
+    effective_github_token = _github_from_sidebar or None
+    _configured_github_tokens = configured_tokens()
 
     # ==================== RATE LIMIT STATUS INDICATOR ====================
     st.markdown("**Rate Limit Status**")
 
-    rate_info = get_cached_rate_limit_status(effective_github_token or None)
+    rate_info = get_cached_rate_limit_status(
+        effective_github_token or (_configured_github_tokens[0] if _configured_github_tokens else None)
+    )
 
     if rate_info:
         col1, col2 = st.columns([0.8, 3.2])
@@ -511,7 +517,7 @@ with st.sidebar:
         if rate_info['remaining'] < 200:
             st.warning("⚠️ Rate limit is getting low. Consider using a token with higher limits.", icon="⚠️")
     else:
-        if effective_github_token:
+        if effective_github_token or _configured_github_tokens:
             st.caption("Rate limit status unavailable right now.")
         else:
             st.caption("Using anonymous access → **60 requests/hour**")
@@ -535,8 +541,8 @@ with st.sidebar:
     st.info("💡 Tip: Use the 'Icons & Badges' tab to add your tech stack icons!")
 
 # Data Loading
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def load_data(user, token=None, use_mock=False, _cache_version="v3"):  # bump when auth/cache semantics change
+@st.cache_data(ttl=300)  # Keep live GitHub data reasonably fresh while limiting API load.
+def load_data(user, token=None, use_mock=False, _cache_version="v4"):  # bump when auth/cache semantics change
     d = github_api.get_live_github_data(user, token)
     if not d:
         if use_mock:
@@ -547,8 +553,8 @@ def load_data(user, token=None, use_mock=False, _cache_version="v3"):  # bump wh
     return d
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def load_actions_data(user, token=None, use_mock=False, _cache_version="v1"):
+@st.cache_data(ttl=300, show_spinner=False)
+def load_actions_data(user, token=None, use_mock=False, _cache_version="v2"):
     d = github_api.get_github_actions_data(user, token)
     if not d:
         if use_mock:
@@ -561,20 +567,20 @@ def load_actions_data(user, token=None, use_mock=False, _cache_version="v1"):
 data = load_data(username if username else "torvalds", effective_github_token or None, use_mock_data)
 
 # Show token warning only if no token is available from ANY source (env, secrets, sidebar)
-if not effective_github_token:
+if not effective_github_token and not _configured_github_tokens:
     st.info(
-        "No **GITHUB_TOKEN** found. GitHub data uses lower anonymous rate limits. "
-        "Set `GITHUB_TOKEN` in `.env`, Streamlit secrets, or paste a token in the sidebar."
+        "No server-side GitHub token found. GitHub data uses lower anonymous rate limits. "
+        "Add a token in Streamlit secrets or paste your own token in the sidebar."
     )
 
 # Ensure data is not None
 if data is None:
-    if effective_github_token:
-        _err_type = "invalid_user"
-        _err_type_msg = "Username not found — check spelling."
+    if effective_github_token or _configured_github_tokens:
+        _err_type = "api_error"
+        _err_type_msg = "GitHub is temporarily unavailable. Check the configured token or try again."
     else:
         _err_type = "rate_limit"
-        _err_type_msg = "GitHub API rate limit reached — add a `GITHUB_TOKEN` in the sidebar."
+        _err_type_msg = "GitHub API rate limit reached — add a token in the sidebar or configure the server-side token pool."
 
     _err_svg = draw_error_card(_err_type, username=username if username else "user")
 
@@ -583,7 +589,7 @@ if data is None:
         f'<div style="max-width:450px; margin-top:12px;">{_err_svg}</div>',
         unsafe_allow_html=True
     )
-    st.info("💡 Add a `GITHUB_TOKEN` in the sidebar to fix rate limit issues.")
+    st.info("💡 Add a GitHub token in the sidebar or configure the server-side token pool.")
     st.stop()
 
 
@@ -1239,9 +1245,6 @@ with tab10:
         if selected_theme != "Default": params.append(f"theme={selected_theme}")
         for k, v in custom_colors.items():
             params.append(f"{k}={v.replace('#', '')}")
-        if effective_github_token:
-            params.append(f"token={effective_github_token}")
-
         query_str = "&".join(params)
         if query_str: query_str = "?" + query_str
 
@@ -1560,7 +1563,7 @@ with tab16:
     st.subheader("⚙️ GitHub Actions")
     st.caption("Workflow run totals, success rate, and recent runs from GitHub Actions.")
 
-    if not effective_github_token:
+    if not effective_github_token and not _configured_github_tokens:
         st.warning(
             "A GitHub token is required for live Actions data. Enable mock data for a local preview, or add a token in the sidebar."
         )

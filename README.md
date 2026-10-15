@@ -84,7 +84,7 @@ streamlit run app.py
 
 The app will open at `http://localhost:8501` ... or you can just use the live deployed application!
 
-**Optional**: Add a `.env` file with your `GITHUB_TOKEN` for higher API rate limits (5,000/hour vs 60/hour)
+**Optional**: Configure `GITHUB_TOKEN_1`, `GITHUB_TOKEN_2`, and `GITHUB_TOKEN_3` in Streamlit secrets for server-side failover. The original `GITHUB_TOKEN` name remains supported for existing deployments.
 
 ## 🎯 How to Use
 

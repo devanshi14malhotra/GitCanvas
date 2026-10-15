@@ -3,6 +3,7 @@ import requests
 from .svg_base import CSS_ANIMATIONS
 from themes.styles import THEMES
 from utils.api_validators import validate_github_events_response
+from utils.github_api import github_request
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,13 +38,15 @@ def draw_recent_activity_card(data, theme_name="Default", custom_colors=None, to
         if custom_colors:
             theme.update(custom_colors)
 
-    headers = {"Accept": "application/vnd.github.v3+json"}
-    if token:
-        headers["Authorization"] = f"token {token}"
-
     url = f"https://api.github.com/users/{username}/events"
     try:
-        resp = requests.get(url, headers=headers, timeout=8)
+        resp = github_request(
+            "GET",
+            url,
+            token,
+            headers={"Accept": "application/vnd.github.v3+json"},
+            timeout=8,
+        )
     except requests.RequestException as e:
         # Return an SVG with the error
         logger.error(f"Failed to fetch events: {e}")
