@@ -38,7 +38,7 @@ GitCanvas is a Python-based project that turns GitHub contribution and profile d
 | Module | Location | Purpose |
 |---|---|---|
 | Streamlit App | app.py | Main interactive UI for users |
-| Roast Widget App | roast_widget_streamlit.py | Dedicated AI roast interface |
+| Streamlit UI Components | ui/ | Theme gallery and AI roast/compliment widgets |
 | API Service | api/main.py | FastAPI entrypoint with route handlers |
 | AI Services | ai/ | Roast service and model integration logic |
 | Card Generators | generators/ | SVG builders for all card variants |
@@ -140,7 +140,7 @@ Follow this checklist for any feature PR during Sourcery.
 
 ### Issue 1: Improve Copy Text in UI
 - Update wording for clarity and grammar.
-- Files: app.py, roast_widget_streamlit.py
+- Files: app.py, ui/roast_widget.py, ui/compliment_widget.py
 
 ### Issue 2: Add Empty-State Message for Missing Repos
 - Show user-friendly text when repo list is empty.
