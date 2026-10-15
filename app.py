@@ -270,8 +270,8 @@ with st.sidebar:
     with st.form(key="username_form"):
         username = st.text_input(
             "GitHub Username",
-            value=st.session_state.get("last_username", "torvalds"),
-            placeholder="e.g. torvalds",
+            value=st.session_state.get("last_username", "devanshi14malhotra"),
+            placeholder="e.g. devanshi14malhotra",
             help="Press Enter or click Load Profile to fetch data"
         )
         submitted = st.form_submit_button(
@@ -285,7 +285,7 @@ with st.sidebar:
         st.session_state["last_username"] = username.strip()
 
     # Use last confirmed username — avoids mid-typing API calls
-    username = st.session_state.get("last_username", "torvalds").strip()
+    username = st.session_state.get("last_username", "devanshi14malhotra").strip()
     # ── End debounce fix ─────────────────────────────────────────────────
 
     
@@ -564,7 +564,7 @@ def load_actions_data(user, token=None, use_mock=False, _cache_version="v2"):
             return None
     return d
 
-data = load_data(username if username else "torvalds", effective_github_token or None, use_mock_data)
+data = load_data(username if username else "devanshi14malhotra", effective_github_token or None, use_mock_data)
 
 # Show token warning only if no token is available from ANY source (env, secrets, sidebar)
 if not effective_github_token and not _configured_github_tokens:
@@ -598,7 +598,7 @@ if "top_repos" not in data:
     data["top_repos"] = []
 
 # Initialize other missing fields with defaults
-data.setdefault("username", username if username else "torvalds")
+data.setdefault("username", username if username else "devanshi14malhotra")
 data.setdefault("total_stars", 0)
 data.setdefault("total_commits", 0)
 data.setdefault("public_repos", 0)
@@ -1568,7 +1568,7 @@ with tab16:
             "A GitHub token is required for live Actions data. Enable mock data for a local preview, or add a token in the sidebar."
         )
 
-    actions_data = load_actions_data(username if username else "torvalds", effective_github_token or None, use_mock_data)
+    actions_data = load_actions_data(username if username else "devanshi14malhotra", effective_github_token or None, use_mock_data)
 
     if actions_data:
         col1, col2 = st.columns([1.5, 1])
