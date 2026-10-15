@@ -95,7 +95,14 @@ class GitCanvasSettings(BaseSettings):
 
     @property
     def has_github_token(self) -> bool:
-        return self.github_token_value() is not None
+        if self.github_token_value() is not None:
+            return True
+        try:
+            from utils.github_tokens import configured_tokens
+
+            return bool(configured_tokens())
+        except (ImportError, RuntimeError, TypeError):
+            return False
 
     @property
     def has_any_llm_key(self) -> bool:
@@ -104,10 +111,7 @@ class GitCanvasSettings(BaseSettings):
     def log_backend_warnings(self) -> None:
         """Log non-fatal configuration issues when starting the API."""
         if not self.has_github_token:
-            logger.warning(
-                "GITHUB_TOKEN is not set: GitHub requests use anonymous rate limits "
-                "unless clients send Authorization: Bearer <token>."
-            )
+            logger.warning("No server-side GitHub token is configured: GitHub requests use anonymous rate limits.")
         if not self.has_any_llm_key:
             logger.warning(
                 "Neither OPENAI_API_KEY nor GEMINI_API_KEY is set: "

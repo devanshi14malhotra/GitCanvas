@@ -17,7 +17,7 @@ from utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 # Cache configurations
-GITHUB_API_CACHE_TTL = 15 * 60  # 15 minutes
+GITHUB_API_CACHE_TTL = 5 * 60  # Keep live GitHub data reasonably fresh.
 SVG_CACHE_TTL = 60 * 60  # 1 hour
 CACHE_MAX_SIZE = 1000  # Maximum number of cached items
 

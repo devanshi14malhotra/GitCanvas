@@ -28,7 +28,9 @@ App opens at `http://localhost:8501`
 ### Optional: Add GitHub Token
 Create `.env` file for higher API limits (5,000/hour vs 60/hour):
 ```bash
-GITHUB_TOKEN=your_github_token_here
+GITHUB_TOKEN_1=
+GITHUB_TOKEN_2=
+GITHUB_TOKEN_3=
 ```
 
 ---

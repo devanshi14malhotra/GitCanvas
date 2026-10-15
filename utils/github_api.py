@@ -21,6 +21,7 @@ from .api_validators import (
     validate_graphql_response,
     safe_get_nested_value
 )
+from .github_tokens import configured_tokens, is_token_failure, token_candidates
 
 logger = setup_logger(__name__)
 
@@ -299,14 +300,7 @@ def calculate_streak_data(contributions):
 
 @cache_github_api
 def fetch_github_graphql(username, token=None):
-    if not token:
-        try:
-            token = st.secrets.get("GITHUB_TOKEN")
-        except (AttributeError, KeyError, RuntimeError, TypeError):
-            token = None
-        if not token:
-            token = os.getenv("GITHUB_TOKEN")
-    if not token:
+    if not token and not configured_tokens():
         return None
 
     from datetime import datetime, timedelta, timezone as _tz
@@ -333,13 +327,13 @@ def fetch_github_graphql(username, token=None):
     }
     """
 
-    headers = {
-        "Authorization": f"token {token}"
-    }
+    headers = {"Content-Type": "application/json"}
 
     try:
-        resp = requests.post(
+        resp = github_request(
+            "POST",
             GITHUB_GRAPHQL_URL,
+            token,
             json={"query": query, "variables": {"login": username, "from": _from, "to": _to}},
             headers=headers,
             timeout=10
@@ -456,7 +450,7 @@ def parse_graphql_contributions(graphql_json):
 def get_github_headers(token=None):
     """
     Build headers for GitHub REST API requests.
-    Uses Authorization header if GITHUB_TOKEN is set.
+    Uses Authorization header when a token is supplied.
     """
     headers = {
         "Accept": "application/vnd.github+json"
@@ -473,6 +467,25 @@ def get_github_headers(token=None):
         headers["Authorization"] = f"Bearer {token}"
 
     return headers
+
+
+def github_request(method, url, token=None, **kwargs):
+    """Make a GitHub request with server-token failover when needed."""
+    request_headers = dict(kwargs.pop("headers", {}) or {})
+    candidates = token_candidates(token)
+    response = None
+
+    for candidate in candidates:
+        headers = dict(request_headers)
+        headers.update(get_github_headers(candidate))
+        request = requests.get if method.upper() == "GET" else requests.post
+        response = request(url, headers=headers, **kwargs)
+        if not is_token_failure(response) or candidate == candidates[-1]:
+            return response
+
+        logger.warning("GitHub token failed for %s; trying the next configured token.", url)
+
+    return response
 
 
 def _extract_github_error_message(response) -> str:
@@ -525,7 +538,7 @@ def get_live_github_data(username, token=None, raise_errors: bool = False):
         headers = get_github_headers(token)
         
         try:
-            user_resp = requests.get(user_url, headers=headers, timeout=10)
+            user_resp = github_request("GET", user_url, token, headers=headers, timeout=10)
             log_api_call(logger, user_url, user_resp.status_code, has_token=bool(token))
         except requests.RequestException as e:
             logger.error(f"Failed to fetch user data: {e}")
@@ -561,7 +574,7 @@ def get_live_github_data(username, token=None, raise_errors: bool = False):
         repos_url = f"https://api.github.com/users/{username}/repos?per_page=100&sort=updated"
         
         try:
-            repos_resp = requests.get(repos_url, headers=headers, timeout=10)
+            repos_resp = github_request("GET", repos_url, token, headers=headers, timeout=10)
             if repos_resp:
                 log_api_call(logger, repos_url, repos_resp.status_code, has_token=bool(token))
         except requests.RequestException as e:
@@ -873,18 +886,7 @@ def get_github_actions_data(username, token=None):
     Returns:
         Dict with actions statistics or None if no data available
     """
-    if not token:
-        # Try to get token from streamlit secrets or environment
-        try:
-            token = st.secrets.get("GITHUB_TOKEN")
-        except (AttributeError, KeyError, RuntimeError, TypeError):
-            # Secrets file not found or not accessible
-            token = None
-        
-        if not token:
-            token = os.getenv("GITHUB_TOKEN")
-    
-    if not token:
+    if not token and not configured_tokens():
         logger.warning(f"GitHub token required to fetch Actions data for {username}")
         return None
     
@@ -893,7 +895,7 @@ def get_github_actions_data(username, token=None):
         repos_url = f"https://api.github.com/users/{username}/repos?per_page=100"
         headers = get_github_headers(token)
         
-        repos_resp = requests.get(repos_url, headers=headers, timeout=10)
+        repos_resp = github_request("GET", repos_url, token, headers=headers, timeout=10)
         if repos_resp.status_code != 200:
             logger.error(f"Failed to fetch repos for Actions data: {repos_resp.status_code}")
             return None
@@ -919,7 +921,7 @@ def get_github_actions_data(username, token=None):
             try:
                 # Fetch workflows for this repo
                 workflows_url = f"https://api.github.com/repos/{username}/{repo_name}/actions/workflows"
-                workflows_resp = requests.get(workflows_url, headers=headers, timeout=10)
+                workflows_resp = github_request("GET", workflows_url, token, headers=headers, timeout=10)
                 
                 if workflows_resp.status_code == 200:
                     workflows = workflows_resp.json().get('workflows', [])
@@ -933,7 +935,7 @@ def get_github_actions_data(username, token=None):
                             try:
                                 # Fetch runs for this workflow
                                 runs_url = f"https://api.github.com/repos/{username}/{repo_name}/actions/workflows/{workflow_id}/runs?per_page=10"
-                                runs_resp = requests.get(runs_url, headers=headers, timeout=10)
+                                runs_resp = github_request("GET", runs_url, token, headers=headers, timeout=10)
                                 
                                 if runs_resp.status_code == 200:
                                     runs_data = runs_resp.json().get('workflow_runs', [])
