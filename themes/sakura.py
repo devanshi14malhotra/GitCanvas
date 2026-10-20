@@ -45,7 +45,7 @@ def render(data):
     Low Activity = small plate petals
     Peak Activity = large deep magenta full bloom flowers
 
-    """        
+    """
     width = 800
     height = 400
     dwg = svgwrite.Drawing(size=("100%","100%"),viewBox=f"0 0 {width} {height}")
