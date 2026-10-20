@@ -112,16 +112,27 @@ THEMES = {
         "tags": ["dark", "neon", "colorful", "fun", "bold"]
     },
     "Black Panther": {
-    "bg_color": "#0B0B0F",
-    "border_color": "#C0C0C0",
-    "title_color": "#9D4EDD",
-    "text_color": "#F5F5F5",
-    "icon_color": "#6A0DAD",
-    "font_family": "Verdana, Geneva, sans-serif",
-    "title_font_size": 20,
-    "text_font_size": 14,
-    "tags": ["dark", "marvel", "wakanda", "elegant", "purple"]
-    }
+        "bg_color": "#0B0B0F",
+        "border_color": "#C0C0C0",
+        "title_color": "#9D4EDD",
+        "text_color": "#F5F5F5",
+        "icon_color": "#6A0DAD",
+        "font_family": "Verdana, Geneva, sans-serif",
+        "title_font_size": 20,
+        "text_font_size": 14,
+        "tags": ["dark", "marvel", "wakanda", "elegant", "purple"]
+    },
+    "Star Wars: The Force": {
+        "bg_color": "#0B0C10",
+        "border_color": "#FFE81F",
+        "title_color": "#4BD5EE",
+        "text_color": "#FFFFFF",
+        "icon_color": "#FF0000",
+        "font_family": "'Orbitron', 'Courier New', monospace",
+        "title_font_size": 20,
+        "text_font_size": 14,
+        "tags": ["dark", "space", "sci-fi", "star wars", "colorful", "popular"]
+    },
 }
 import json
 import os
