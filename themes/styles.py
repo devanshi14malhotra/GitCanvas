@@ -107,7 +107,7 @@ THEMES = {
         "text_color": "#ffffff",
         "icon_color": "#ff00ff",
         "font_family": "'Courier New', monospace",
-        "title_font_size": 18, 
+        "title_font_size": 18,
         "text_font_size": 14,
         "tags": ["dark", "neon", "colorful", "fun", "bold"]
     },
