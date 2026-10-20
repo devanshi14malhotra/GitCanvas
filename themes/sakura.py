@@ -127,7 +127,7 @@ def render(data):
             stroke = "#2A1A2A", stroke_width = 4,
             stroke_linecap = "round"
         ))
-    
+
     #blossom clusters on tree
     random.seed(77)
     for bx, by in [(40,235),(120,240),(55,210),(105,215),(80,195)]:
