@@ -208,6 +208,7 @@ def _palette_from_theme(theme_name, theme):
         "Cyberpunk": ["#0a0e27", "#004a8c", "#0074c8", "#8e2ae6", "#d957b4"],
         "Ocean": ["#001122", "#003b55", "#00658a", "#0090c7", "#4dbfa8"],
         "Retro": ["#f5f0e1", "#d8c9ad", "#ba9f76", "#947658", "#6c563f"],
+        "Star Wars: The Force": ["#1F2833", "#4BD5EE", "#2FF924", "#8A2BE2", "#FF0000"],
     }
 
     if theme_name in palette_map:
