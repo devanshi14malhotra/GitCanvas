@@ -786,7 +786,7 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         from themes import matrix
         svg = matrix.render(data, theme)
         return svg
-    
+
     # Get the appropriate theme renderer from dispatcher
     theme_renderer = THEME_DISPATCHER.get(original_theme_name)
     
@@ -795,10 +795,12 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         theme_renderer = render_default_theme
     
     # Call the theme-specific renderer
-    theme_renderer(
+    rendered_svg = theme_renderer(
         dwg, data, theme, weeks, cols, rows, max_date, 
         width, height
     )
+    if isinstance(rendered_svg, str):
+        return rendered_svg
     
     # For Glass theme, pass additional parameters
     if original_theme_name == "Glass":
@@ -817,4 +819,3 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         render_glass_theme(dwg, data, theme, weeks, cols, rows, max_date, width, height, animations_enabled, CSS_ANIMATIONS)
     
     return dwg.tostring()
-
