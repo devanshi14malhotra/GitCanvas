@@ -133,6 +133,18 @@ THEMES = {
         "text_font_size": 14,
         "tags": ["dark", "space", "sci-fi", "star wars", "colorful", "popular"]
     },
+        "Thor": {
+        "bg_color": "#24272B",
+        "border_color": "#8A969F",
+        "title_color": "#F5D547",
+        "text_color": "#DDE5EC",
+        "icon_color": "#FFF4A3",
+        "font_family": "Segoe UI, Ubuntu, Sans-Serif",
+        "title_font_size": 20,
+        "text_font_size": 14,
+        "tags": ["dark", "marvel", "thor", "asgard", "metallic", "lightning"]
+    },
+    
 }
 import json
 import os
