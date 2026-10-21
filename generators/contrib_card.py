@@ -194,6 +194,10 @@ def _mix_colors(base_color, target_color, ratio):
 
 
 def _palette_from_theme(theme_name, theme):
+
+    custom_palette = theme.get("contribution_palette")
+    if custom_palette is not None:
+        return list(custom_palette)
     title_color = theme.get("title_color", "#58a6ff")
     border_color = theme.get("border_color", "#30363d")
 
@@ -280,9 +284,19 @@ def draw_calendar_heatmap_card(
     period_label="Last Year",
     animations_enabled=False,
 ):
+
     theme = THEMES.get(theme_name, THEMES["Default"]).copy()
     if custom_colors:
         theme.update(custom_colors)
+
+    animation_config = theme.get("animation", {})
+    if isinstance(animation_config, dict):
+        if "enabled" in animation_config:
+            animations_enabled = animation_config["enabled"]
+
+        animation_duration_ms = animation_config.get("duration_ms", 600)
+    else:
+        animation_duration_ms = 600
 
     username = data.get("username", "Unknown")
     contributions = _normalize_heatmap_contributions(data.get("contributions", []), date_range=date_range)
@@ -403,6 +417,7 @@ def draw_calendar_heatmap_card(
                     opacity=0.95,
                     rx=2,
                     ry=2,
+                    class_="contribution-cell",
                 ))
             else:
                 dwg.add(dwg.rect(
@@ -411,6 +426,7 @@ def draw_calendar_heatmap_card(
                     fill=fill,
                     rx=2,
                     ry=2,
+                    class_="contribution-cell",
                 ))
 
     footer_y = start_y + (7 * (cell_size + gap) - gap) + 18
@@ -451,6 +467,19 @@ def draw_calendar_heatmap_card(
         font_family=theme.get("font_family", "Arial"),
         opacity=0.75,
     ))
+
+    if animations_enabled:
+        duration_seconds = animation_duration_ms / 1000
+        animation_css = f"""
+        .contribution-cell {{
+            animation: heatmapFadeIn {duration_seconds:g}s ease-in-out;
+        }}
+        @keyframes heatmapFadeIn {{
+            from {{ opacity: 0.3; }}
+            to {{ opacity: 1; }}
+        }}
+        """
+        dwg.defs.add(dwg.style(animation_css))
 
     return dwg.tostring()
 
@@ -518,7 +547,7 @@ def draw_calendar_heatmap_card_legacy(
     if custom_colors:
         theme.update(custom_colors)
 
-    # ── Layout constants ────────────────────────────────────────────────────
+    # Layout constants
     CELL      = 11   # cell size (px)
     GAP       = 2    # gap between cells
     STEP      = CELL + GAP
@@ -563,7 +592,7 @@ def draw_calendar_heatmap_card_legacy(
         opacity=0.7
     ))
 
-    # ── Contribution data ────────────────────────────────────────────────────
+    # Contribution data
     contributions = data.get("contributions", [])
     if date_range:
         from utils.github_api import filter_contributions_by_date
@@ -595,7 +624,7 @@ def draw_calendar_heatmap_card_legacy(
 
     max_count = max(date_counts.values(), default=1) or 1
 
-    # ── Color palette ────────────────────────────────────────────────────────
+    # Color palette
     bg = theme["bg_color"]
     is_light_bg = bg.startswith("#f") or bg.startswith("#e") or bg in ("#ffffff", "#fff")
     default_empty = "#ebedf0" if is_light_bg else "#161b22"
@@ -636,7 +665,7 @@ def draw_calendar_heatmap_card_legacy(
         if ratio <= 0.75: return 3
         return 4
 
-    # ── Month labels (above grid) ────────────────────────────────────────────
+    # Month labels (above grid)
     MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun",
                    "Jul","Aug","Sep","Oct","Nov","Dec"]
     last_month = -1
@@ -654,7 +683,7 @@ def draw_calendar_heatmap_card_legacy(
             ))
             last_month = week_start.month
 
-    # ── Day-of-week labels (left of grid) ────────────────────────────────────
+    # Day-of-week labels (left of grid)
     for row, label in ((1, "Mon"), (3, "Wed"), (5, "Fri")):
         dwg.add(dwg.text(
             label,
@@ -666,12 +695,12 @@ def draw_calendar_heatmap_card_legacy(
             opacity=0.65
         ))
 
-    # ── Grid cells ───────────────────────────────────────────────────────────
+    # Grid cells
     for col in range(COLS):
         for row in range(ROWS):
             current = start_date + timedelta(days=col * 7 + row)
             if current > today:
-                # future cell — draw faint outline only
+                # Future cell: draw faint outline only
                 dwg.add(dwg.rect(
                     insert=(GRID_X + col * STEP, GRID_Y + row * STEP),
                     size=(CELL, CELL),
@@ -691,7 +720,7 @@ def draw_calendar_heatmap_card_legacy(
                 rx=2, ry=2
             ))
 
-    # ── Legend ───────────────────────────────────────────────────────────────
+    # Legend
     legend_y  = height - 10
     legend_x0 = width - PAD_RIGHT - (5 * (CELL + 3)) - 50
 
@@ -718,10 +747,10 @@ def draw_calendar_heatmap_card_legacy(
 def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range=None, animations_enabled=True):
     """
     Generates a Contribution Graph Card SVG with theme-specific visualization.
-    
+
     Supports multiple themes including Gaming, Space, Marvel, Stranger_things,
     Pacman, Cyberpunk, Cricket, Ocean, Glass, Neural, Matrix, and Default.
-    
+
     Args:
         data: Dict containing contribution data with 'contributions' list
         theme_name: String name of the theme to use (case-sensitive)
@@ -729,58 +758,58 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
         date_range: Optional dict with 'start' and 'end' date strings (YYYY-MM-DD)
                     to filter contributions. If None, shows all contributions.
         animations_enabled: Whether to enable CSS animations (default: True)
-    
+
     Returns:
         SVG string for the contribution card
     """
     # Save original theme name for comparison
     original_theme_name = theme_name
-    
+
     # Get theme configuration
     theme = THEMES.get(theme_name, THEMES["Default"]).copy()
     if custom_colors:
         theme.update(custom_colors)
-    
+
     # Determine canvas size based on theme
     width = 500
     height = 170
-    
+
     # Allow larger canvas for Gaming theme
     if original_theme_name == "Gaming":
         width = 560
         height = 180
-    
+
     # Create SVG drawing
     dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
-    
+
     # Background
     draw_card_background(dwg, width, height, theme)
-    
+
     # Add title
     username = data.get('username', 'Unknown')
     title = f"{username}'s Contributions"
-    dwg.add(dwg.text(title, insert=(20, 24), 
-                     fill=theme["title_color"], 
-                     font_size=theme.get("title_font_size", 18), 
-                     font_family=theme.get("font_family", "Arial"), 
+    dwg.add(dwg.text(title, insert=(20, 24),
+                     fill=theme["title_color"],
+                     font_size=theme.get("title_font_size", 18),
+                     font_family=theme.get("font_family", "Arial"),
                      font_weight="bold"))
-    
+
     # Prepare contribution data
     contributions = data.get("contributions", [])
-    
+
     # Filter contributions by date range if provided
     if date_range:
         from utils.github_api import filter_contributions_by_date
         contributions = filter_contributions_by_date(contributions, date_range)
-    
+
     # Calculate grid dimensions
     total_days = len(contributions)
     cols = 53 if total_days >= 371 else 52
     rows = 7
-    
+
     # Convert contributions to weekly grid
     weeks, max_date = _resolve_weeks(contributions, data.get("contribution_weeks"), cols, rows)
-    
+
     # Handle special case: Matrix theme delegates to its own module
     if original_theme_name == "Matrix":
         from themes import matrix
@@ -789,33 +818,32 @@ def draw_contrib_card(data, theme_name="Default", custom_colors=None, date_range
 
     # Get the appropriate theme renderer from dispatcher
     theme_renderer = THEME_DISPATCHER.get(original_theme_name)
-    
+
     # If theme not in dispatcher, use default
     if theme_renderer is None:
         theme_renderer = render_default_theme
-    
+
     # Call the theme-specific renderer
     rendered_svg = theme_renderer(
-        dwg, data, theme, weeks, cols, rows, max_date, 
+        dwg, data, theme, weeks, cols, rows, max_date,
         width, height
     )
     if isinstance(rendered_svg, str):
         return rendered_svg
-    
+
     # For Glass theme, pass additional parameters
     if original_theme_name == "Glass":
         # Re-render Glass theme with animation support
         from .themes.advanced_themes import render_glass_theme
         # Clear the SVG except for background and title (already added above)
         dwg = svgwrite.Drawing(size=("100%", "100%"), viewBox=f"0 0 {width} {height}")
-        dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), rx=10, ry=10, 
-                         fill=theme["bg_color"], stroke=theme["border_color"], stroke_width=2))
-        dwg.add(dwg.text(title, insert=(20, 24), 
-                         fill=theme["title_color"], 
-                         font_size=theme.get("title_font_size", 18), 
-                         font_family=theme.get("font_family", "Arial"), 
+        draw_card_background(dwg, width, height, theme)
+        dwg.add(dwg.text(title, insert=(20, 24),
+                         fill=theme["title_color"],
+                         font_size=theme.get("title_font_size", 18),
+                         font_family=theme.get("font_family", "Arial"),
                          font_weight="bold"))
-        
+
         render_glass_theme(dwg, data, theme, weeks, cols, rows, max_date, width, height, animations_enabled, CSS_ANIMATIONS)
-    
+
     return dwg.tostring()
