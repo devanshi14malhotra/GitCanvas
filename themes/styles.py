@@ -10,7 +10,7 @@ THEMES = {
         "text_font_size": 14,
         "tags": ["dark", "minimal", "clean", "popular"]
     },
-    
+
    "Spider-Man": {
     "bg_color": "#050505",
     "border_color": "#ff0000",
@@ -138,6 +138,7 @@ import json
 import os
 from pathlib import Path
 from themes.aurora_gradient import AURORA_GRADIENT
+from themes.theme_schema import normalize_theme
 
 
 themes_dir = Path(__file__).parent / "json"
@@ -156,11 +157,8 @@ def _theme_name_from_stem(stem: str) -> str:
     return stem.replace("_", " ").replace("-", " ").title()
 
 def normalize_theme_colors(theme_data):
-    """Ensure hex color values include a leading #."""
-    for key, value in theme_data.items():
-        if key.endswith("_color") and isinstance(value, str) and value and not value.startswith("#"):
-            theme_data[key] = f"#{value}"
-    return theme_data
+    """Normalize and validate legacy and declarative theme properties."""
+    return normalize_theme(theme_data)
 
 
 def load_predefined_themes():
@@ -187,15 +185,17 @@ def load_custom_themes():
     return custom_themes
 
 def save_custom_theme(theme_name, theme_data):
-    """Save a custom theme to a JSON file"""
+    """Save a validated custom theme to a JSON file."""
+    theme_data = normalize_theme_colors(theme_data)
+
     # Sanitize theme name for filename
     safe_name = theme_name.lower().replace(' ', '_').replace('-', '_')
     filename = f"custom_{safe_name}.json"
     filepath = themes_dir / filename
-    
+
     with filepath.open('w') as f:
         json.dump(theme_data, f, indent=4)
-    
+
     return filename
 
 def get_all_themes():

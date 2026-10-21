@@ -21,5 +21,29 @@ def test_calendar_heatmap_returns_svg():
 
     assert isinstance(result, str)
     assert result.startswith("<svg")
-    assert "viewBox=\"0 0 735 169\"" in result
+    assert "viewBox=\"0 0 735 182\"" in result
     assert "testuser's Contribution Calendar" in result
+
+
+def test_custom_contribution_palette_is_used():
+    from generators.contrib_card import _palette_from_theme
+
+    custom_palette = [
+        "#111111",
+        "#222222",
+        "#333333",
+        "#444444",
+        "#555555",
+    ]
+
+    result = _palette_from_theme(
+        "My Custom Theme",
+        {
+            "bg_color": "#000000",
+            "title_color": "#ffffff",
+            "border_color": "#888888",
+            "contribution_palette": custom_palette,
+        },
+    )
+
+    assert result == custom_palette

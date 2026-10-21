@@ -1,5 +1,6 @@
 import svgwrite
 from themes.styles import THEMES
+from uuid import uuid4
 
 
 _FONT_FACE_MAP = {
@@ -260,32 +261,76 @@ def create_svg_base(theme_name, custom_colors, width, height, title_text, animat
     
     return dwg, theme
 
+
 def draw_card_background(dwg, width, height, theme, rx=10, ry=10,
                          stroke_width=2, opacity=1.0):
     """
-    Draws a standard rounded-rect card background with theme border.
-    Replaces repeated dwg.rect(insert=(0,0)...) pattern in all generators.
+    Draw a standard rounded-rectangle card background.
 
-    Args:
-        dwg: svgwrite Drawing object
-        width: card width (int or "100%")
-        height: card height (int or "100%")
-        theme: theme dict with bg_color and border_color
-        rx: horizontal border radius (default 10)
-        ry: vertical border radius (default 10)
-        stroke_width: border thickness (default 2)
-        opacity: background opacity (default 1.0)
+    Supports legacy flat theme keys and declarative background and
+    border configuration.
     """
     size = (f"{width}px", f"{height}px") if isinstance(width, int) else ("100%", "100%")
+
+    background = theme.get("background", {})
+    border = theme.get("border", {})
+
+    # Preserve legacy theme defaults, with declarative border overrides.
+    border_radius = border.get("radius")
+    if border_radius is not None:
+        rx = ry = border_radius
+
+    effective_stroke_width = border.get("width", stroke_width)
+    border_color = border.get(
+        "color",
+        theme.get("border_color", "#30363d"),
+    )
+
+    # Default to the legacy solid background.
+    fill = theme.get("bg_color", "#0d1117")
+
+    background_type = background.get("type", "solid")
+    background_colors = background.get("colors", [])
+
+    if background_type == "gradient" and len(background_colors) >= 2:
+        gradient_id = f"theme-background-gradient-{uuid4().hex}"
+
+        direction = background.get("direction", "horizontal")
+        gradient_directions = {
+            "horizontal": ("0%", "0%", "100%", "0%"),
+            "vertical": ("0%", "0%", "0%", "100%"),
+            "diagonal": ("0%", "0%", "100%", "100%"),
+        }
+        x1, y1, x2, y2 = gradient_directions.get(
+            direction, gradient_directions["horizontal"]
+        )
+
+        gradient = dwg.linearGradient(
+            id=gradient_id,
+            start=(x1, y1),
+            end=(x2, y2),
+        )
+
+        for index, color in enumerate(background_colors):
+            offset = index / (len(background_colors) - 1)
+            gradient.add_stop_color(offset, color)
+
+        dwg.defs.add(gradient)
+        fill = f"url(#{gradient_id})"
+    elif background_type == "solid" and background_colors:
+        fill = background_colors[0]
+
     dwg.add(dwg.rect(
         insert=(0, 0),
         size=size,
-        rx=rx, ry=ry,
-        fill=theme.get("bg_color", "#0d1117"),
-        stroke=theme.get("border_color", "#30363d"),
-        stroke_width=stroke_width,
-        opacity=opacity
+        rx=rx,
+        ry=ry,
+        fill=fill,
+        stroke=border_color,
+        stroke_width=effective_stroke_width,
+        opacity=opacity,
     ))
+
 
 
 def draw_divider_line(dwg, x1, y1, x2, y2, theme,
